@@ -90,10 +90,8 @@ struct ContentView: View {
                 return
             }
             
-            for sample in samples {
-                prevHR = sample.quantity.doubleValue(for: hrValue)
-                value = Int(prevHR)
-            }
+            prevHR = samples.last!.quantity.doubleValue(for: hrValue)
+            value = Int(prevHR)
         }
         
         let query = HKAnchoredObjectQuery(type: HKObjectType.quantityType(forIdentifier: .heartRate)!, predicate: predicate, anchor: nil, limit: HKObjectQueryNoLimit, resultsHandler: updateHandler)
