@@ -14,7 +14,7 @@ import HealthKit
 struct ContentView: View {
     @State private var hasRequested : Bool = false
 //    @State private var value : Int = 0
-    @State private var value : Int = 0 {
+    @State private var hbValue : Int = 0 {
         didSet {
             // Handle some kind of POST/PUT to a server/database
             if address != "" && recording == true{
@@ -31,8 +31,12 @@ struct ContentView: View {
                 request.httpMethod = "PUT"
                 request.setValue("application/json", forHTTPHeaderField: "Content-Type")
                 
+                let date = Date()
+                let currentDate = formatter.string(from: date)
+                
                 let body : [String: AnyHashable] = [
-                    "heartBeat": value
+                    "date" : currentDate,
+                    "heartBeat": hbValue
                 ]
                 
                 do {
@@ -48,7 +52,7 @@ struct ContentView: View {
                     if error == nil && data != nil{
                         do {
                             let response = try JSONSerialization.jsonObject(with: data!, options: .mutableContainers) as? [String:AnyHashable]
-                            print(response)
+                            print(response!)
                         } catch {
                             print("Error occured when parsing response data")
                             return
@@ -67,11 +71,18 @@ struct ContentView: View {
     }
     @State var healthStore : HKHealthStore
     @State var settings : Bool = false
+    
     @State var recording : Bool = false
+    @State var recordingStr : String = "Start Recording"
+    
     @State var address : String = ""
     let hrValue = HKUnit(from:"count/min")
+    let formatter : DateFormatter
     
     init() {
+        formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd hh:mm a"
+
         healthStore = HKHealthStore()
         
         let biometric_info =
@@ -92,6 +103,17 @@ struct ContentView: View {
         settings = !settings
     }
     
+    func changeRecording () -> Void {
+        if recording {
+            recordingStr = "Start Recording"
+            recording = !recording
+            return
+        }
+        recordingStr = "Stop Recording"
+        recording = !recording
+
+    }
+    
     private func getHB () {
         // Predicate for filtering out a query
         let predicate = HKQuery.predicateForObjects(from: [HKDevice.local()])
@@ -109,7 +131,7 @@ struct ContentView: View {
             
             if lastSample != nil  {
                 prevHR = lastSample!.quantity.doubleValue(for: hrValue)
-                value = Int(prevHR)
+                hbValue = Int(prevHR)
             }
         }
         
@@ -129,6 +151,30 @@ struct ContentView: View {
             limit: HKObjectQueryNoLimit,
             resultsHandler: updateHandler
         )
+        
+//        let respiratoryRateQuery = HKAnchoredObjectQuery(
+//            type: HKObjectType.quantityType(forIdentifier: .respiratoryRate)!,
+//            predicate: predicate,
+//            anchor: nil,
+//            limit: HKObjectQueryNoLimit,
+//            resultsHandler: updateHandler
+//        )
+//        
+//        let heartRateVarQuery = HKAnchoredObjectQuery(
+//            type: HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!,
+//            predicate: predicate,
+//            anchor: nil,
+//            limit: HKObjectQueryNoLimit,
+//            resultsHandler: updateHandler
+//        )
+//        
+//        let restingHeartRateQuery = HKAnchoredObjectQuery(
+//            type: HKObjectType.quantityType(forIdentifier: .restingHeartRate)!,
+//            predicate: predicate,
+//            anchor: nil,
+//            limit: HKObjectQueryNoLimit,
+//            resultsHandler: updateHandler
+//        )
         
         heartRateQuery.updateHandler = updateHandler
         print("Executing Query")
@@ -154,7 +200,7 @@ struct ContentView: View {
                     Text("♥")
                         .font(.system(size: 50))
                         .foregroundColor(.red)
-                    Text("\(value)")
+                    Text("\(hbValue)")
                         .fontWeight(.bold)
                         .font(.system(size: 50))
                     // Temporary value before implementation of health store
@@ -163,7 +209,9 @@ struct ContentView: View {
                             .foregroundStyle(.red)
                     }
                 }
-            }.offset(y: -20)
+                Button("\(recordingStr)", action: changeRecording)
+                    
+            }
             if settings {
                 VStack {
                     Rectangle().fill(Color.black)
