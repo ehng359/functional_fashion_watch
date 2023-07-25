@@ -2,6 +2,6 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "self:">
+      location = "self:/Users/edwardng/Desktop/Swift_Projects/hb_read/watch-app/hb_read.xcodeproj">
    </FileRef>
 </Workspace>
