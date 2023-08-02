@@ -10,8 +10,9 @@ import HealthKit
 
 // Make sure to add
 // Heart-rate variability, Respiratory rate, Resting Heart-rate
+// Note, cannot use variables of property wrappers inside of a view.
 
-struct ContentView: View {
+struct BiometricReadView: View {
     @State private var hbValue : Int = 0 {
         didSet {
             sendHTTPRequest(forRequestType: .POST, forBiometricType: .heartRate)
@@ -34,6 +35,9 @@ struct ContentView: View {
     }
     
     @State var healthStore : HKHealthStore
+    @State var workoutSession : HKWorkoutSession?
+    @State var workoutBuilder : HKLiveWorkoutBuilder?
+    
     @State var settings : Bool = false
     @State var queryHasSent : Bool = false
     @State var timeOfSample : String = ""
@@ -43,27 +47,16 @@ struct ContentView: View {
     
     @State var address : String = ""
     
-    enum BiometricType {
-        case heartRate
-        case restingHeartRate
-        case heartRateVar
-        case respiratoryRate
-    }
-    
-    enum RequestType : String {
-        case PUT = "PUT"
-        case POST = "POST"
-    }
-    
     init() {
         healthStore = HKHealthStore()
         
         let biometric_info =
             Set([
-                HKObjectType.quantityType(forIdentifier: .heartRate)!,
-                HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!,
-                HKObjectType.quantityType(forIdentifier: .restingHeartRate)!,
-                HKObjectType.quantityType(forIdentifier: .respiratoryRate)!
+                HKQuantityType(.heartRate),
+                HKQuantityType(.heartRateVariabilitySDNN),
+                HKQuantityType(.restingHeartRate),
+                HKQuantityType(.respiratoryRate),
+                HKQuantityType.workoutType()
             ])
         healthStore.requestAuthorization(toShare: biometric_info, read: biometric_info) {(success, error) in
             if !success {
@@ -72,6 +65,67 @@ struct ContentView: View {
         }
     }
     
+    var body: some View {
+        ZStack {
+            VStack {
+                HStack {
+                    Spacer(minLength: 5)
+                    Circle()
+                        .fill(Color.white.opacity(0.2))
+                        .overlay(content: {
+                            Text("...")
+                                .offset(y:-3)
+                        })
+                        .frame(width: 40, height: 40)
+                        .onTapGesture(perform: changeSettings)
+                }
+                HStack{
+                    Text("♥")
+                        .font(.system(size: 50))
+                        .foregroundColor(.red)
+                    Text("\(hbValue)")
+                        .fontWeight(.bold)
+                        .font(.system(size: 50))
+                    // Temporary value before implementation of health store
+                    VStack {
+                        Text("BPM")
+                            .foregroundStyle(.red)
+                    }
+                }
+                Button("\(recordingStr)", action: changeRecording)
+                    
+            }
+            if settings {
+                VStack {
+                    Rectangle().fill(Color.black)
+                        .overlay(content: {
+                            VStack{
+                                HStack{
+                                    Text("Settings")
+                                        .fontWeight(.bold)
+                                        .font(.system(size: 30))
+                                    Spacer()
+                                    Circle()
+                                        .fill(Color.white.opacity(0.2))
+                                        .overlay(content: {
+                                            Text("X")
+                                        })
+                                        .frame(width: 40, height: 40)
+                                        .onTapGesture(perform: changeSettings)
+                                }
+                                TextField("Address (Required)", text: $address)
+                            }.offset(y: -29)
+                        })
+                }
+            }
+        }
+        .padding()
+        .onAppear(perform: getBiometrics)
+    }
+}
+
+// All necessary functions to get the BiometricReadView to work.
+extension BiometricReadView {
     func changeSettings () -> Void {
         settings = !settings
     }
@@ -80,10 +134,33 @@ struct ContentView: View {
         if recording {
             recordingStr = "Start Recording"
             recording = !recording
+            
+            workoutSession!.end()
+            workoutBuilder!.endCollection(withEnd: .now) { (success, error) in
+                guard success else {
+                    print("Error ending workout builder.")
+                    return
+                }
+                print("Successfully ended live session.")
+            }
             return
         }
-        recordingStr = "Stop Recording"
-        recording = !recording
+
+        if (address != "") {
+            recordingStr = "Stop Recording"
+            recording = !recording
+            
+            workoutSession!.startActivity(with: .now)
+            workoutBuilder!.beginCollection(withStart: .now) { (success, error) in
+                guard success else {
+                    print("Error has occured in collecting activity information.")
+                    return
+                }
+                print("Live session started successfully")
+            }
+        } else {
+            print("No address has been inputted. Recording was not initiated.")
+        }
     }
     
     func updateBiometricState (withType type : BiometricType, withValue newValue : Int, withTime time : String) -> Void {
@@ -164,6 +241,19 @@ struct ContentView: View {
     private func getBiometrics () {
         // Predicate for filtering out a query
         if !queryHasSent {
+            let config = HKWorkoutConfiguration()
+            config.activityType = .running
+            config.locationType = .outdoor
+            
+            do {
+                workoutSession = try HKWorkoutSession(healthStore: healthStore, configuration: config)
+                workoutBuilder = workoutSession!.associatedWorkoutBuilder()
+            } catch {
+                print("Error building workout session with given configurations.")
+            }
+            workoutBuilder!.dataSource = HKLiveWorkoutDataSource(healthStore: healthStore, workoutConfiguration: config)
+            workoutBuilder!.shouldCollectWorkoutEvents = false
+            
             let predicate = HKQuery.predicateForObjects(from: [HKDevice.local()])
             
             // A query that provides continuous, long-term monitoring of changes for the value that we want to observe changes within
@@ -256,68 +346,24 @@ struct ContentView: View {
             queryHasSent = true
         }
     }
+}
+
+extension BiometricReadView {
+    enum BiometricType {
+        case heartRate
+        case restingHeartRate
+        case heartRateVar
+        case respiratoryRate
+    }
     
-    var body: some View {
-        ZStack {
-            VStack {
-                HStack {
-                    Spacer(minLength: 5)
-                    Circle()
-                        .fill(Color.white.opacity(0.2))
-                        .overlay(content: {
-                            Text("...")
-                                .offset(y:-3)
-                        })
-                        .frame(width: 40, height: 40)
-                        .onTapGesture(perform: changeSettings)
-                }
-                HStack{
-                    Text("♥")
-                        .font(.system(size: 50))
-                        .foregroundColor(.red)
-                    Text("\(hbValue)")
-                        .fontWeight(.bold)
-                        .font(.system(size: 50))
-                    // Temporary value before implementation of health store
-                    VStack {
-                        Text("BPM")
-                            .foregroundStyle(.red)
-                    }
-                }
-                Button("\(recordingStr)", action: changeRecording)
-                    
-            }
-            if settings {
-                VStack {
-                    Rectangle().fill(Color.black)
-                        .overlay(content: {
-                            VStack{
-                                HStack{
-                                    Text("Settings")
-                                        .fontWeight(.bold)
-                                        .font(.system(size: 30))
-                                    Spacer()
-                                    Circle()
-                                        .fill(Color.white.opacity(0.2))
-                                        .overlay(content: {
-                                            Text("X")
-                                        })
-                                        .frame(width: 40, height: 40)
-                                        .onTapGesture(perform: changeSettings)
-                                }
-                                TextField("Address (Required)", text: $address)
-                            }.offset(y: -29)
-                        })
-                }
-            }
-        }
-        .padding()
-        .onAppear(perform: getBiometrics)
+    enum RequestType : String {
+        case PUT = "PUT"
+        case POST = "POST"
     }
 }
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView()
+        BiometricReadView()
     }
 }

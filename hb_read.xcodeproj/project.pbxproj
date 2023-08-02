@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		58A4616B2A534AAF00C7D28D /* hb_read Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 58A4616A2A534AAF00C7D28D /* hb_read Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		58A461702A534AAF00C7D28D /* hb_readApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58A4616F2A534AAF00C7D28D /* hb_readApp.swift */; };
-		58A461722A534AAF00C7D28D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58A461712A534AAF00C7D28D /* ContentView.swift */; };
+		58A461722A534AAF00C7D28D /* BiometricReadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58A461712A534AAF00C7D28D /* BiometricReadView.swift */; };
 		58A461742A534AB000C7D28D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 58A461732A534AB000C7D28D /* Assets.xcassets */; };
 		58A461772A534AB000C7D28D /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 58A461762A534AB000C7D28D /* Preview Assets.xcassets */; };
 		58A461812A534AB000C7D28D /* hb_read_Watch_AppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58A461802A534AB000C7D28D /* hb_read_Watch_AppTests.swift */; };
@@ -61,7 +61,7 @@
 		58A461642A534AAF00C7D28D /* hb_read.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = hb_read.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		58A4616A2A534AAF00C7D28D /* hb_read Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "hb_read Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		58A4616F2A534AAF00C7D28D /* hb_readApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = hb_readApp.swift; sourceTree = "<group>"; };
-		58A461712A534AAF00C7D28D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		58A461712A534AAF00C7D28D /* BiometricReadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricReadView.swift; sourceTree = "<group>"; };
 		58A461732A534AB000C7D28D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		58A461762A534AB000C7D28D /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		58A4617C2A534AB000C7D28D /* hb_read Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "hb_read Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -123,7 +123,7 @@
 				5811EDAA2A5CAD9B0090000E /* hb-read-Watch-App-Info.plist */,
 				58693AD12A56418800F6BFDA /* hb_read Watch App.entitlements */,
 				58A4616F2A534AAF00C7D28D /* hb_readApp.swift */,
-				58A461712A534AAF00C7D28D /* ContentView.swift */,
+				58A461712A534AAF00C7D28D /* BiometricReadView.swift */,
 				58A461732A534AB000C7D28D /* Assets.xcassets */,
 				58A461752A534AB000C7D28D /* Preview Content */,
 			);
@@ -313,7 +313,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				58A461722A534AAF00C7D28D /* ContentView.swift in Sources */,
+				58A461722A534AAF00C7D28D /* BiometricReadView.swift in Sources */,
 				58A461702A534AAF00C7D28D /* hb_readApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

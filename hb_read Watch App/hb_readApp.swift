@@ -11,7 +11,7 @@ import SwiftUI
 struct hb_read_Watch_AppApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            BiometricReadView()
         }
     }
 }
