@@ -40,6 +40,7 @@ struct BiometricReadView: View {
     
     @State var settings : Bool = false
     @State var queryHasSent : Bool = false
+    @State var jsonResponse : [String : AnyHashable] = [:]
     @State var timeOfSample : String = ""
     
     @State var recording : Bool = false
@@ -126,13 +127,16 @@ struct BiometricReadView: View {
 
 // All necessary functions to get the BiometricReadView to work.
 extension BiometricReadView {
+    /// Changes views to display the settings view.
     func changeSettings () -> Void {
         settings = !settings
     }
     
+    /// Initiates a recording session which allows for recordings to remain active or stops a recording session, depending on the self.recording state.
     func changeRecording () -> Void {
         if recording {
             recordingStr = "Start Recording"
+            sendHTTPRequest(forRequestType: .PUT, forBiometricType: .heartRate)
             recording = !recording
             
             workoutSession!.end()
@@ -163,6 +167,7 @@ extension BiometricReadView {
         }
     }
     
+    /// Functionally generates a change to particular the associated Biometric values held by the BiometricReadView.
     func updateBiometricState (withType type : BiometricType, withValue newValue : Int, withTime time : String) -> Void {
         timeOfSample = time
         switch(type){
@@ -182,11 +187,14 @@ extension BiometricReadView {
             print("RHR")
             rhrValue = newValue
             return
+        case .none:
+            return
         }
     }
     
+    /// Sends a generic HTTP Request to a hosted server to publish recorded values.
     func sendHTTPRequest (forRequestType requestType : RequestType, forBiometricType biometricType : BiometricType) -> Void {
-        if address != "" && recording == true{
+        if address != "" && recording == true   {
             print("Currently making \(requestType.rawValue) request")
             
             guard let url = URL(string: address) else {
@@ -208,7 +216,6 @@ extension BiometricReadView {
                 "restingHeartRate" : biometricType == .restingHeartRate ? rhrValue : NSNull(),
             ]
             
-            
             do {
                 let requestBody = try JSONSerialization.data(withJSONObject: body, options: .fragmentsAllowed)
                 request.httpBody = requestBody
@@ -222,6 +229,9 @@ extension BiometricReadView {
                 if error == nil && data != nil{
                     do {
                         let response = try JSONSerialization.jsonObject(with: data!, options: .mutableContainers) as? [String:AnyHashable]
+                        if requestType == .PUT {
+                            jsonResponse = response!
+                        }
                         print(response!)
                     } catch {
                         print("Error occured when parsing response data")
@@ -238,6 +248,7 @@ extension BiometricReadView {
         }
     }
     
+    /// Initiates queries to constantly retrieve HealthKit values and instantiates the HKWorkoutSession to maintain activity status on the application.
     private func getBiometrics () {
         // Predicate for filtering out a query
         if !queryHasSent {
@@ -348,12 +359,14 @@ extension BiometricReadView {
     }
 }
 
+// All necessary enumerations to indicate differences in values being updated within the view.
 extension BiometricReadView {
     enum BiometricType {
         case heartRate
         case restingHeartRate
         case heartRateVar
         case respiratoryRate
+        case none
     }
     
     enum RequestType : String {
