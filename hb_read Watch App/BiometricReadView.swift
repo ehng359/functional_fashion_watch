@@ -48,6 +48,8 @@ struct BiometricReadView: View {
     
     @State var address : String = ""
     
+    @State var location : CGPoint = CGPoint(x: 0, y: 0)
+    
     init() {
         healthStore = HKHealthStore()
         
@@ -68,33 +70,44 @@ struct BiometricReadView: View {
     
     var body: some View {
         ZStack {
-            VStack {
-                HStack {
-                    Spacer(minLength: 5)
-                    Circle()
-                        .fill(Color.white.opacity(0.2))
-                        .overlay(content: {
-                            Text("...")
-                                .offset(y:-3)
-                        })
-                        .frame(width: 40, height: 40)
-                        .onTapGesture(perform: changeSettings)
-                }
-                HStack{
-                    Text("♥")
-                        .font(.system(size: 50))
-                        .foregroundColor(.red)
-                    Text("\(hbValue)")
-                        .fontWeight(.bold)
-                        .font(.system(size: 50))
-                    // Temporary value before implementation of health store
-                    VStack {
-                        Text("BPM")
-                            .foregroundStyle(.red)
+            ScrollView {
+                VStack {
+                    HStack {
+                        Spacer(minLength: 5)
+                        Circle()
+                            .fill(Color.white.opacity(0.2))
+                            .overlay(content: {
+                                Text("...")
+                                    .offset(y:-3)
+                            })
+                            .frame(width: 40, height: 40)
+                            .onTapGesture(perform: changeSettings)
                     }
+                    HStack{
+                        Text("♥")
+                            .font(.system(size: 50))
+                            .foregroundColor(.red)
+                        Text("\(hbValue)")
+                            .fontWeight(.bold)
+                            .font(.system(size: 50))
+                        VStack {
+                            Text("BPM")
+                                .foregroundStyle(.red)
+                        }
+                    }
+                        .offset(y: -10)
+                    Button("\(recordingStr)", action: changeRecording)
+                        .offset(y: -17)
+                    VAGrid(location: Binding<CGPoint>(
+                        get: {
+                            location
+                        },
+                        set: {
+                            location = $0
+                        }
+                    ))
+                        .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.8, height: WKInterfaceDevice.current().screenBounds.width * 0.8)
                 }
-                Button("\(recordingStr)", action: changeRecording)
-                    
             }
             if settings {
                 VStack {
