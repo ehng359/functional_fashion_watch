@@ -16,18 +16,27 @@ struct BiometricReadView: View {
     @State private var hbValue : Int = 0 {
         didSet {
             sendHTTPRequest(forRequestType: .POST, forBiometricType: .heartRate)
+            computeRunningHRV(hbValue)
         }
     }
+    
     @State var rhrValue : Int = 0 {
         didSet {
             sendHTTPRequest(forRequestType: .POST, forBiometricType: .restingHeartRate)
         }
     }
-    @State var hrVarValue : Int = 0 {
+    
+    @State var hrvValue : Int = 0 {
         didSet {
             sendHTTPRequest(forRequestType: .POST, forBiometricType: .heartRateVar)
+            print("\(hrvValue) ms")
+            print("HRV")
         }
     }
+    @State var hrvTotalCount : Double = 0
+    @State var hrvRunningSummation : Double = 0
+    @State var prevRRInterval : Double = 0
+    
     @State var rrValue : Int = 0 {
         didSet {
             sendHTTPRequest(forRequestType: .POST, forBiometricType: .respiratoryRate)
@@ -180,6 +189,21 @@ extension BiometricReadView {
         }
     }
     
+    /// Computes the ongoing HRV value
+    func computeRunningHRV(_ heartBeat : Int) {
+        if (heartBeat != 0) {
+            hrvTotalCount += 1
+            let RRInterval = 1.0/(Double(heartBeat)/60000.0)
+            if hrvTotalCount > 1.0 {
+                let rrDiff = RRInterval - prevRRInterval
+                hrvRunningSummation += rrDiff * rrDiff
+                let RMSSD = sqrt((1.0/(hrvTotalCount - 1.0)) * (hrvRunningSummation))
+                hrvValue = Int(RMSSD)
+            }
+            prevRRInterval = RRInterval
+        }
+    }
+    
     /// Functionally generates a change to particular the associated Biometric values held by the BiometricReadView.
     func updateBiometricState (withType type : BiometricType, withValue newValue : Int, withTime time : String) -> Void {
         timeOfSample = time
@@ -190,7 +214,7 @@ extension BiometricReadView {
             return
         case .heartRateVar:
             print("HRVAR")
-            hrVarValue = newValue
+            hrvValue = newValue
             return
         case .respiratoryRate:
             print("RR")
@@ -225,7 +249,7 @@ extension BiometricReadView {
                 "date" : timeOfSample,
                 "heartBeat": biometricType == .heartRate ? hbValue : NSNull(),
                 "respiratoryRate": biometricType == .respiratoryRate ? rrValue : NSNull(),
-                "heartBeatVar" : biometricType == .heartRateVar ? hrVarValue : NSNull(),
+                "heartBeatVar" : biometricType == .heartRateVar ? hrvValue : NSNull(),
                 "restingHeartRate" : biometricType == .restingHeartRate ? rhrValue : NSNull(),
             ]
             
@@ -363,7 +387,7 @@ extension BiometricReadView {
             
             print("Executing Query")
             healthStore.execute(hrQuery)
-            healthStore.execute(hrVarQuery)
+//            healthStore.execute(hrVarQuery)
             healthStore.execute(rhrQuery)
             healthStore.execute(rrQuery)
             
