@@ -40,7 +40,7 @@ struct BiometricReadView: View {
     
     @State var settings : Bool = false
     @State var queryHasSent : Bool = false
-    @State var jsonResponse : [String : AnyHashable] = [:]
+    @State var jsonResponse : [String : Any] = [:]
     @State var timeOfSample : String = ""
     
     @State var recording : Bool = false
@@ -164,6 +164,19 @@ extension BiometricReadView {
             recordingStr = "Stop Recording"
             recording = !recording
             
+            let config = HKWorkoutConfiguration()
+            config.activityType = .running
+            config.locationType = .outdoor
+            
+            do {
+                workoutSession = try HKWorkoutSession(healthStore: healthStore, configuration: config)
+                workoutBuilder = workoutSession!.associatedWorkoutBuilder()
+            } catch {
+                print("Error building workout session with given configurations.")
+            }
+            workoutBuilder!.dataSource = HKLiveWorkoutDataSource(healthStore: healthStore, workoutConfiguration: config)
+            workoutBuilder!.shouldCollectWorkoutEvents = false
+            
             workoutSession!.startActivity(with: .now)
             workoutBuilder!.beginCollection(withStart: .now) { (success, error) in
                 guard success else {
@@ -227,7 +240,7 @@ extension BiometricReadView {
             }
             
             var request = URLRequest(url: url)
-            print("Secured URL")
+            print("Secured URL: \(url)")
             
             request.httpMethod = requestType.rawValue
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -256,11 +269,13 @@ extension BiometricReadView {
             let task = session.dataTask(with: request) {data, _, error in
                 if error == nil && data != nil{
                     do {
-                        let response = try JSONSerialization.jsonObject(with: data!, options: .mutableContainers) as? [String:AnyHashable]
+                        let response = try JSONSerialization.jsonObject(with: data!, options: .mutableContainers) as? [String:Any]
                         if requestType == .PUT {
                             jsonResponse = response!
+                            let content = jsonResponse["JSON_Content"] as! [[String:AnyHashable]]
+                            print(jsonResponse["JSON_Content"]!)
+                            print(content)
                         }
-                        print(jsonResponse)
                         if coordChosen {
                             vaGridCoord = CGPoint(x:0, y:0)
                             resetLocation = true
@@ -284,21 +299,7 @@ extension BiometricReadView {
     private func getBiometrics () {
         // Predicate for filtering out a query
         if !queryHasSent {
-            let config = HKWorkoutConfiguration()
-            config.activityType = .running
-            config.locationType = .outdoor
-            
-            do {
-                workoutSession = try HKWorkoutSession(healthStore: healthStore, configuration: config)
-                workoutBuilder = workoutSession!.associatedWorkoutBuilder()
-            } catch {
-                print("Error building workout session with given configurations.")
-            }
-            workoutBuilder!.dataSource = HKLiveWorkoutDataSource(healthStore: healthStore, workoutConfiguration: config)
-            workoutBuilder!.shouldCollectWorkoutEvents = false
-            
             let predicate = HKQuery.predicateForObjects(from: [HKDevice.local()])
-            
             // A query that provides continuous, long-term monitoring of changes for the value that we want to observe changes within
             let decideHandler : (BiometricType) -> (HKAnchoredObjectQuery, [HKSample]?, [HKDeletedObject]?, HKQueryAnchor?, Error?) -> Void = { type in
                 
@@ -336,8 +337,8 @@ extension BiometricReadView {
              single array of values.
              
              Heart-rate (BPS) - sample every ~5 seconds
+             Heart-rate variability (ms) - samples every ~5 seconds (live estimation)
              Respiratory rate (BPM) - samples every ~10 minutes, requires 'Sleep Mode'
-             Heart-rate variability (ms) - samples every 3 to 5 hours
              */
             
             let hrUpdateHandler = decideHandler(.heartRate)
@@ -359,17 +360,7 @@ extension BiometricReadView {
                 resultsHandler: rrUpdateHandler
             )
             rrQuery.updateHandler = rrUpdateHandler
-            
-            let hrVarUpdateHandler = decideHandler(.heartRateVar)
-            let hrVarQuery = HKAnchoredObjectQuery(
-                type: HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!,
-                predicate: predicate,
-                anchor: nil,
-                limit: HKObjectQueryNoLimit,
-                resultsHandler: hrVarUpdateHandler
-            )
-            hrVarQuery.updateHandler = hrVarUpdateHandler
-            
+
             let rhrUpdateHandler = decideHandler(.restingHeartRate)
             let rhrQuery = HKAnchoredObjectQuery(
                 type: HKObjectType.quantityType(forIdentifier: .restingHeartRate)!,
@@ -382,7 +373,6 @@ extension BiometricReadView {
             
             print("Executing Query")
             healthStore.execute(hrQuery)
-//            healthStore.execute(hrVarQuery)
             healthStore.execute(rhrQuery)
             healthStore.execute(rrQuery)
             
