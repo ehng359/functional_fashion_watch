@@ -10,6 +10,8 @@ import SwiftUI
 
 struct VAGrid : View {
     @Binding var location : CGPoint
+    @Binding var reset : Bool
+    
     @State var nLocation : CGPoint = CGPoint(x:0, y:0)
     @State var pointWasChosen : Bool = false
     @State var geometry : GeometryProxy?
@@ -100,6 +102,11 @@ struct VAGrid : View {
             .onAppear(perform: {
                 self.geometry = geometry
             })
+            .onChange(of: reset) {_ in
+                reset = false
+                nLocation.x = 0
+                nLocation.y = 0
+            }
             .background(Color.mint)
         }
     }

@@ -16,21 +16,6 @@ struct BiometricReadView: View {
     @State private var hbValue : Int = 0 {
         didSet {
             sendHTTPRequest(forRequestType: .POST, forBiometricType: .heartRate)
-            computeRunningHRV(hbValue)
-        }
-    }
-    
-    @State var rhrValue : Int = 0 {
-        didSet {
-            sendHTTPRequest(forRequestType: .POST, forBiometricType: .restingHeartRate)
-        }
-    }
-    
-    @State var hrvValue : Int = 0 {
-        didSet {
-            sendHTTPRequest(forRequestType: .POST, forBiometricType: .heartRateVar)
-            print("\(hrvValue) ms")
-            print("HRV")
         }
     }
     @State var hrvTotalCount : Double = 0
@@ -40,6 +25,12 @@ struct BiometricReadView: View {
     @State var rrValue : Int = 0 {
         didSet {
             sendHTTPRequest(forRequestType: .POST, forBiometricType: .respiratoryRate)
+        }
+    }
+    
+    @State var rhrValue : Int = 0 {
+        didSet {
+            sendHTTPRequest(forRequestType: .POST, forBiometricType: .restingHeartRate)
         }
     }
     
@@ -57,7 +48,8 @@ struct BiometricReadView: View {
     
     @State var address : String = ""
     
-    @State var location : CGPoint = CGPoint(x: 0, y: 0)
+    @State var vaGridCoord : CGPoint = CGPoint(x: 0, y: 0)
+    @State var resetLocation : Bool = false
     
     init() {
         healthStore = HKHealthStore()
@@ -107,14 +99,10 @@ struct BiometricReadView: View {
                         .offset(y: -10)
                     Button("\(recordingStr)", action: changeRecording)
                         .offset(y: -17)
-                    VAGrid(location: Binding<CGPoint>(
-                        get: {
-                            location
-                        },
-                        set: {
-                            location = $0
-                        }
-                    ))
+                    VAGrid(
+                        location: Binding<CGPoint>(get: { vaGridCoord }, set: { vaGridCoord = $0 }),
+                        reset: Binding<Bool>(get: { resetLocation }, set: { resetLocation = $0 })
+                    )
                         .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.8, height: WKInterfaceDevice.current().screenBounds.width * 0.8)
                 }
             }
@@ -190,7 +178,8 @@ extension BiometricReadView {
     }
     
     /// Computes the ongoing HRV value
-    func computeRunningHRV(_ heartBeat : Int) {
+    func computeRunningHRV(_ heartBeat : Int) -> Int? {
+        var hrv : Int
         if (heartBeat != 0) {
             hrvTotalCount += 1
             let RRInterval = 1.0/(Double(heartBeat)/60000.0)
@@ -198,10 +187,12 @@ extension BiometricReadView {
                 let rrDiff = RRInterval - prevRRInterval
                 hrvRunningSummation += rrDiff * rrDiff
                 let RMSSD = sqrt((1.0/(hrvTotalCount - 1.0)) * (hrvRunningSummation))
-                hrvValue = Int(RMSSD)
+                hrv = Int(RMSSD)
+                return hrv
             }
             prevRRInterval = RRInterval
         }
+        return nil
     }
     
     /// Functionally generates a change to particular the associated Biometric values held by the BiometricReadView.
@@ -212,10 +203,6 @@ extension BiometricReadView {
             print("HR")
             hbValue = newValue
             return
-        case .heartRateVar:
-            print("HRVAR")
-            hrvValue = newValue
-            return
         case .respiratoryRate:
             print("RR")
             rrValue = newValue
@@ -224,7 +211,7 @@ extension BiometricReadView {
             print("RHR")
             rhrValue = newValue
             return
-        case .none:
+        case _:
             return
         }
     }
@@ -245,12 +232,16 @@ extension BiometricReadView {
             request.httpMethod = requestType.rawValue
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             
+            let coordChosen = (vaGridCoord.x != 0 || vaGridCoord.y != 0)
             let body : [String: AnyHashable] = [
+                "id" : WKInterfaceDevice.current().identifierForVendor!.uuidString,
                 "date" : timeOfSample,
                 "heartBeat": biometricType == .heartRate ? hbValue : NSNull(),
                 "respiratoryRate": biometricType == .respiratoryRate ? rrValue : NSNull(),
-                "heartBeatVar" : biometricType == .heartRateVar ? hrvValue : NSNull(),
+                "heartBeatVar" : biometricType == .heartRate ? computeRunningHRV(hbValue) : NSNull(),
                 "restingHeartRate" : biometricType == .restingHeartRate ? rhrValue : NSNull(),
+                "valence" : coordChosen ? vaGridCoord.x : NSNull(),
+                "arousal" : coordChosen ? vaGridCoord.y : NSNull(),
             ]
             
             do {
@@ -269,7 +260,11 @@ extension BiometricReadView {
                         if requestType == .PUT {
                             jsonResponse = response!
                         }
-                        print(response!)
+                        print(jsonResponse)
+                        if coordChosen {
+                            vaGridCoord = CGPoint(x:0, y:0)
+                            resetLocation = true
+                        }
                     } catch {
                         print("Error occured when parsing response data")
                         return
