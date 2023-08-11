@@ -42,6 +42,8 @@ struct BiometricReadView: View {
     @State var queryHasSent : Bool = false
     @State var jsonResponse : [String : Any] = [:]
     @State var timeOfSample : String = ""
+    @State var selectedVAType = "None"
+    let vaTypes = ["None", "Grid", "Line", "Form"]
     
     @State var recording : Bool = false
     @State var recordingStr : String = "Start Recording"
@@ -49,6 +51,7 @@ struct BiometricReadView: View {
     @State var address : String = ""
     
     @State var vaGridCoord : CGPoint = CGPoint(x: 0, y: 0)
+    @State var valence : CGFloat = 0
     @State var resetLocation : Bool = false
     
     init() {
@@ -99,11 +102,35 @@ struct BiometricReadView: View {
                         .offset(y: -10)
                     Button("\(recordingStr)", action: changeRecording)
                         .offset(y: -17)
-                    VAGrid(
-                        location: Binding<CGPoint>(get: { vaGridCoord }, set: { vaGridCoord = $0 }),
-                        reset: Binding<Bool>(get: { resetLocation }, set: { resetLocation = $0 })
-                    )
+                    
+                    switch(selectedVAType) {
+                    case "Grid":
+                        VAGrid(
+                            location: Binding<CGPoint>(get: { vaGridCoord }, set: { vaGridCoord = $0 }),
+                            reset: Binding<Bool>(get: { resetLocation }, set: { resetLocation = $0 })
+                        )
                         .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.8, height: WKInterfaceDevice.current().screenBounds.width * 0.8)
+                    case "Line":
+                        VALine(
+                            valence: Binding<CGFloat>(get: { vaGridCoord.x }, set: { vaGridCoord.x = $0 })
+                        )
+                        .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.8, height: WKInterfaceDevice.current().screenBounds.width * 0.8)
+                    case "Form":
+                        VAForm(
+                            valence: Binding<CGFloat>(get: { vaGridCoord.x }, set: { vaGridCoord.x = $0 }),
+                            arousal: Binding<CGFloat>(get: { vaGridCoord.y }, set: { vaGridCoord.y = $0 })
+                        )
+                        .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.8, height: WKInterfaceDevice.current().screenBounds.width * 0.8)
+                    case _:
+                        Rectangle()
+                            .overlay {
+                            Text("No choice selected. Change in the settings")
+                                .font(.system(size: 12))
+                                .foregroundColor(Color.black)
+                            }
+                            .cornerRadius(5)
+                            .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.8, height: WKInterfaceDevice.current().screenBounds.width * 0.8)
+                    }
                 }
             }
             if settings {
@@ -124,8 +151,17 @@ struct BiometricReadView: View {
                                         .frame(width: 40, height: 40)
                                         .onTapGesture(perform: changeSettings)
                                 }
-                                TextField("Address (Required)", text: $address)
-                            }.offset(y: -29)
+                                Section {
+                                    TextField("Address (Required)", text: $address)
+                                }
+                                Section {
+                                    Picker("VA Display Type", selection: $selectedVAType){
+                                        ForEach(vaTypes, id: \.self) {
+                                            Text($0)
+                                        }
+                                    }
+                                }
+                            }.offset(y: -15)
                         })
                 }
             }
