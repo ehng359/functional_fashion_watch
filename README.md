@@ -22,3 +22,34 @@ git clone https://github.com/ehng359/functional_fashion_watch
 
 6. In the file tree on the left-hand side, click on the root called 'hb_read'. For each of the sections within 'Targets', go to signing and capabilities and add your iCloud account (the same one you signed in with). Once signed in, switch teams to your personal team and change the bundle identifier for each section to [_your_name].hb_read.* or a name which creates a unique bundle identifier.
 7. Change the target being deployed to at the top (where it indicates a simulator-type) to your Apple Watch. Run. The first initial run will prompt the user for access to Health read/write data. Once this is granted, the process will be paused. Stop the application and re-run the project. This should present live heart-rate data on your watch.
+
+## Usage
+There are three primary screens related to this application: the heartbeat/recording page, the settings page, and the VA-model page.
+
+### Settings
+Indicated within the settings button containing `...` in the corner of the initial view. Under this section, adjust the address by tapping into the relevant text-field which will prompt the user to input an address of the form: `[http/https]://your.website.com/endpoint`.
+
+The other options for adjustment include: 
+1. VA-Display Type - Grid, Line, Form - indicates which way the user inputs valence (and/or arousal) values.
+2. Activity Type - provides context of the current activities relevant to the biometrics being derived.
+Note: to make an adjustment in this picker field, select the box and use the Apple Watch Crown to navigate between each option.
+
+### Main
+Once the address has been inputed (required to start sending HTTP requests), tap record to begin sending JSON information to the aforementioned endpoint established in the settings menu. This will start an activity session recording key values in the format:
+```
+{
+    "watchUser": "XXXXXXXX-XXXX-XXXX-XXXX-ALPHANUMERIC",
+    "date": "YYYY-MM-DD HH:MM:SS +0000",
+    "heartBeat": Int(X),
+    "respiratoryRate": Int(X),
+    "heartBeatVar": Int(X),
+    "restingHeartRate": Int(X),
+    "valence": Float(X),
+    "arousal": Float(X),
+    "activity": "activity-type"
+}
+```
+Once the session has concluded, press stop recording to cease sending values to the endpoint. Reinitiate at any point in time.
+
+## VA-Model
+This model effectively presents information to enable recording of valence and arousal values by either pressing on the model and dragging the cursor around to record values within the next HTTP request sent to the endpoint or simply pressing along the model (Grid/Line). The most basic of these implementations allows for the user to input values into a form and sending those manually inputted values along.
