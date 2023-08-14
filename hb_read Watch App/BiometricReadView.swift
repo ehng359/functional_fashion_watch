@@ -11,6 +11,7 @@ import HealthKit
 // Make sure to add
 // Heart-rate variability, Respiratory rate, Resting Heart-rate
 // Note, cannot use variables of property wrappers inside of a view.
+let safeWidth = WKInterfaceDevice.current().screenBounds.width * 0.8
 
 struct BiometricReadView: View {
     @State private var hbValue : Int = 0 {
@@ -44,6 +45,8 @@ struct BiometricReadView: View {
     @State var timeOfSample : String = ""
     @State var selectedVAType = "None"
     let vaTypes = ["None", "Grid", "Line", "Form"]
+    @State var selectedActivityType = "None"
+    let activityTypes = ["None", "Family/Friends", "Entertainment", "Exercising", "Work/Study", "Public", "Sleeping"]
     
     @State var recording : Bool = false
     @State var recordingStr : String = "Start Recording"
@@ -109,18 +112,20 @@ struct BiometricReadView: View {
                             location: Binding<CGPoint>(get: { vaGridCoord }, set: { vaGridCoord = $0 }),
                             reset: Binding<Bool>(get: { resetLocation }, set: { resetLocation = $0 })
                         )
-                        .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.8, height: WKInterfaceDevice.current().screenBounds.width * 0.8)
+                        .frame(width: safeWidth, height: safeWidth)
                     case "Line":
                         VALine(
-                            valence: Binding<CGFloat>(get: { vaGridCoord.x }, set: { vaGridCoord.x = $0 })
+                            valence: Binding<CGFloat>(get: { vaGridCoord.x }, set: { vaGridCoord.x = $0 }),
+                            reset: Binding<Bool>(get: { resetLocation }, set: { resetLocation = $0 })
                         )
-                        .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.8, height: WKInterfaceDevice.current().screenBounds.width * 0.8)
+                        .frame(width: safeWidth, height: safeWidth)
                     case "Form":
                         VAForm(
                             valence: Binding<CGFloat>(get: { vaGridCoord.x }, set: { vaGridCoord.x = $0 }),
-                            arousal: Binding<CGFloat>(get: { vaGridCoord.y }, set: { vaGridCoord.y = $0 })
+                            arousal: Binding<CGFloat>(get: { vaGridCoord.y }, set: { vaGridCoord.y = $0 }),
+                            reset: Binding<Bool>(get: { resetLocation }, set: { resetLocation = $0 })
                         )
-                        .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.8, height: WKInterfaceDevice.current().screenBounds.width * 0.8)
+                        .frame(width: safeWidth, height: safeWidth)
                     case _:
                         Rectangle()
                             .overlay {
@@ -129,7 +134,7 @@ struct BiometricReadView: View {
                                 .foregroundColor(Color.black)
                             }
                             .cornerRadius(5)
-                            .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.8, height: WKInterfaceDevice.current().screenBounds.width * 0.8)
+                            .frame(width: safeWidth, height: safeWidth)
                     }
                 }
             }
@@ -137,31 +142,59 @@ struct BiometricReadView: View {
                 VStack {
                     Rectangle().fill(Color.black)
                         .overlay(content: {
-                            VStack{
-                                HStack{
-                                    Text("Settings")
-                                        .fontWeight(.bold)
-                                        .font(.system(size: 30))
-                                    Spacer()
-                                    Circle()
-                                        .fill(Color.white.opacity(0.2))
-                                        .overlay(content: {
-                                            Text("X")
-                                        })
-                                        .frame(width: 40, height: 40)
-                                        .onTapGesture(perform: changeSettings)
-                                }
-                                Section {
-                                    TextField("Address (Required)", text: $address)
-                                }
-                                Section {
-                                    Picker("VA Display Type", selection: $selectedVAType){
-                                        ForEach(vaTypes, id: \.self) {
-                                            Text($0)
+                            ScrollView {
+                                VStack {
+                                    HStack{
+                                        Text("Settings")
+                                            .fontWeight(.bold)
+                                            .font(.system(size: 30))
+                                        Spacer()
+                                        Circle()
+                                            .fill(Color.white.opacity(0.2))
+                                            .overlay(content: {
+                                                Text("X")
+                                            })
+                                            .frame(width: 40, height: 40)
+                                            .onTapGesture(perform: changeSettings)
+                                    }
+                                    Section {
+                                        VStack {
+                                            TextField("Address (Required)", text: $address)
+                                            Rectangle()
+                                                .foregroundColor(Color.black)
+                                                .frame(width: safeWidth, height: WKInterfaceDevice.current().screenBounds.height * 0.1, alignment: .leading)
+                                                .overlay {
+                                                    Text("Confirmation:")
+                                                        .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.9, alignment: .leading)
+                                                        .font(.system(size: 20))
+                                                        .fontWeight(.bold)
+                                                }
+                                            if address == "" {
+                                                Text("https://example.com")
+                                            } else {
+                                                Text("\(address)")
+                                                    .foregroundColor(Color.gray)
+                                            }
                                         }
                                     }
+                                    Section {
+                                        Picker("VA Display Type", selection: $selectedVAType){
+                                            ForEach(vaTypes, id: \.self) {str in
+                                                Text(str)
+                                            }
+                                        }
+                                        .frame(width: safeWidth,
+                                               height: WKInterfaceDevice.current().screenBounds.height * 0.3)
+                                        Picker("Activity Type", selection: $selectedActivityType){
+                                            ForEach(activityTypes, id: \.self) {str in
+                                                Text(str)
+                                            }
+                                        }
+                                        .frame(width: safeWidth,
+                                               height: WKInterfaceDevice.current().screenBounds.height * 0.3)
+                                    }
                                 }
-                            }.offset(y: -15)
+                            }.frame(width: WKInterfaceDevice.current().screenBounds.width * 0.9)
                         })
                 }
             }
@@ -267,6 +300,7 @@ extension BiometricReadView {
     
     /// Sends a generic HTTP Request to a hosted server to publish recorded values.
     func sendHTTPRequest (forRequestType requestType : RequestType, forBiometricType biometricType : BiometricType) -> Void {
+        print("coordChosen = ", (vaGridCoord.x != 0 || vaGridCoord.y != 0))
         if address != "" && recording == true   {
             print("Currently making \(requestType.rawValue) request")
             
@@ -291,6 +325,7 @@ extension BiometricReadView {
                 "restingHeartRate" : biometricType == .restingHeartRate ? rhrValue : NSNull(),
                 "valence" : coordChosen ? vaGridCoord.x : NSNull(),
                 "arousal" : coordChosen ? vaGridCoord.y : NSNull(),
+                "activity" : selectedActivityType
             ]
             
             do {

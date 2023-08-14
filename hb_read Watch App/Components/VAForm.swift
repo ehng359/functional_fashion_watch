@@ -15,6 +15,8 @@ struct VAForm : View {
     @Binding var arousal : CGFloat
     @State var formArousal = 0.00
     
+    @Binding var reset : Bool
+    
     var body: some View {
         Form {
             Section {

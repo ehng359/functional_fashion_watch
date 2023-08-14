@@ -13,6 +13,7 @@ struct VAGrid : View {
     @Binding var reset : Bool
     
     @State var nLocation : CGPoint = CGPoint(x:0, y:0)
+    @State var isDragging : Bool = false
     @State var pointWasChosen : Bool = false
     @State var geometry : GeometryProxy?
     
@@ -38,16 +39,20 @@ struct VAGrid : View {
                 if newLocation.x < -1 || newLocation.x > 1 || newLocation.y > 1 || newLocation.y < -1 {
                     return
                 }
-                
+                let oldLocation = location
                 location = newLocation
-                print(location)
+                if (location.x > 0 && oldLocation.x < 0) || (location.x < 0 && oldLocation.x > 0) || (location.y > 0 && oldLocation.y < 0) || (location.y < 0 && oldLocation.y > 0) {
+                    WKInterfaceDevice.current().play(.click)
+                }
             }
     }
     
     var dragGesture : some Gesture {
         DragGesture()
             .onChanged() { event in
+                isDragging = true
                 let width = geometry!.size.width/2
+                let oldLocation = nLocation
                 nLocation = CGPoint(x: event.location.x - width, y: event.location.y - width)
                 if nLocation.x > width {
                     nLocation.x = width
@@ -60,12 +65,22 @@ struct VAGrid : View {
                 } else if nLocation.y < -width{
                     nLocation.y = -width
                 }
+                
+                if (nLocation.x > 0 && oldLocation.x < 0) || (nLocation.x < 0 && oldLocation.x > 0) || (nLocation.y > 0 && oldLocation.y < 0) || (nLocation.y < 0 && oldLocation.y > 0) {
+                    WKInterfaceDevice.current().play(.click)
+                }
+            }
+            .onEnded() { _ in
+                isDragging = false
             }
     }
     
     var body : some View {
         GeometryReader { geometry in
             ZStack {
+                Rectangle()
+                    .foregroundStyle(.radialGradient(colors: [.green, .orange, .yellow, .red], center: .center, startRadius: 0, endRadius: 400))
+                    .frame(width: geometry.size.width, height: geometry.size.width)
                 Grid(horizontalSpacing: 1, verticalSpacing: 1) {
                     ForEach((0..<4)){_ in
                         GridRow() {
@@ -78,6 +93,7 @@ struct VAGrid : View {
                 }
                     .gesture(tapGesture)
                     .gesture(dragGesture)
+                    .opacity(0.6)
                 Circle()
                     .position(x: nLocation.x, y: nLocation.y)
                     .frame(width: 5, height: 5)
@@ -104,8 +120,10 @@ struct VAGrid : View {
             })
             .onChange(of: reset) {_ in
                 reset = false
-                nLocation.x = 0
-                nLocation.y = 0
+                if !isDragging {
+                    nLocation.x = 0
+                    nLocation.y = 0
+                }
             }
             .background(Color.mint)
         }
