@@ -57,6 +57,8 @@ struct BiometricReadView: View {
     @State var valence : CGFloat = 0
     @State var resetLocation : Bool = false
     
+    @State var crownRotation = 0.0
+    
     init() {
         healthStore = HKHealthStore()
         
@@ -77,7 +79,7 @@ struct BiometricReadView: View {
     
     var body: some View {
         ZStack {
-            ScrollView {
+            List{
                 VStack {
                     HStack {
                         Spacer(minLength: 5)
@@ -90,6 +92,7 @@ struct BiometricReadView: View {
                             .frame(width: 40, height: 40)
                             .onTapGesture(perform: changeSettings)
                     }
+                    .offset(y: -WKInterfaceDevice.current().screenBounds.width * 0.10)
                     HStack{
                         Text("♥")
                             .font(.system(size: 50))
@@ -102,101 +105,117 @@ struct BiometricReadView: View {
                                 .foregroundStyle(.red)
                         }
                     }
-                        .offset(y: -10)
-                    Button("\(recordingStr)", action: changeRecording)
-                        .offset(y: -17)
-                    
-                    switch(selectedVAType) {
-                    case "Grid":
-                        VAGrid(
-                            location: Binding<CGPoint>(get: { vaGridCoord }, set: { vaGridCoord = $0 }),
-                            reset: Binding<Bool>(get: { resetLocation }, set: { resetLocation = $0 })
-                        )
+                    .offset(y: -WKInterfaceDevice.current().screenBounds.width * 0.10)
+                }
+                .listItemTint(.clear)
+                .frame(height: safeWidth)
+                
+                switch(selectedVAType) {
+                case "Grid":
+                    VAGrid(
+                        location: Binding<CGPoint>(get: { vaGridCoord }, set: { vaGridCoord = $0 }),
+                        reset: Binding<Bool>(get: { resetLocation }, set: { resetLocation = $0 })
+                    )
+                    .frame(width: safeWidth, height: safeWidth)
+                    .listItemTint(.clear)
+                case "Line":
+                    VALine(
+                        valence: Binding<CGFloat>(get: { vaGridCoord.x }, set: { vaGridCoord.x = $0 }),
+                        reset: Binding<Bool>(get: { resetLocation }, set: { resetLocation = $0 })
+                    )
+                    .frame(width: safeWidth, height: safeWidth)
+                    .listItemTint(.clear)
+                case "Form":
+                    VAForm(
+                        valence: Binding<CGFloat>(get: { vaGridCoord.x }, set: { vaGridCoord.x = $0 }),
+                        arousal: Binding<CGFloat>(get: { vaGridCoord.y }, set: { vaGridCoord.y = $0 }),
+                        reset: Binding<Bool>(get: { resetLocation }, set: { resetLocation = $0 })
+                    )
+                    .frame(width: safeWidth, height: safeWidth)
+                    .listItemTint(.clear)
+                case _:
+                    Rectangle()
+                        .overlay {
+                        Text("No choice selected. Change in the settings.")
+                            .font(.system(size: 12))
+                            .foregroundColor(Color.black)
+                        }
+                        .cornerRadius(5)
                         .frame(width: safeWidth, height: safeWidth)
-                    case "Line":
-                        VALine(
-                            valence: Binding<CGFloat>(get: { vaGridCoord.x }, set: { vaGridCoord.x = $0 }),
-                            reset: Binding<Bool>(get: { resetLocation }, set: { resetLocation = $0 })
-                        )
-                        .frame(width: safeWidth, height: safeWidth)
-                    case "Form":
-                        VAForm(
-                            valence: Binding<CGFloat>(get: { vaGridCoord.x }, set: { vaGridCoord.x = $0 }),
-                            arousal: Binding<CGFloat>(get: { vaGridCoord.y }, set: { vaGridCoord.y = $0 }),
-                            reset: Binding<Bool>(get: { resetLocation }, set: { resetLocation = $0 })
-                        )
-                        .frame(width: safeWidth, height: safeWidth)
-                    case _:
-                        Rectangle()
-                            .overlay {
-                            Text("No choice selected. Change in the settings")
-                                .font(.system(size: 12))
-                                .foregroundColor(Color.black)
-                            }
-                            .cornerRadius(5)
-                            .frame(width: safeWidth, height: safeWidth)
-                    }
+                        .listItemTint(.clear)
                 }
             }
+            .listStyle(.plain)
+            .frame(width: safeWidth * 1.1, height: safeWidth)
+            
+            if !settings {
+                Button("\(recordingStr)", action: changeRecording)
+                    .frame(height: WKInterfaceDevice.current().screenBounds.width * 0.2)
+                    .background(.black)
+                    .cornerRadius(13.0)
+                    .foregroundColor(.white)
+                    .offset(y: WKInterfaceDevice.current().screenBounds.width * 0.5)
+            }
+                            
             if settings {
-                VStack {
-                    Rectangle().fill(Color.black)
-                        .overlay(content: {
-                            ScrollView {
-                                VStack {
-                                    HStack{
-                                        Text("Settings")
-                                            .fontWeight(.bold)
-                                            .font(.system(size: 30))
-                                        Spacer()
-                                        Circle()
-                                            .fill(Color.white.opacity(0.2))
-                                            .overlay(content: {
-                                                Text("X")
-                                            })
-                                            .frame(width: 40, height: 40)
-                                            .onTapGesture(perform: changeSettings)
-                                    }
-                                    Section {
-                                        VStack {
-                                            TextField("Address (Required)", text: $address)
-                                            Rectangle()
-                                                .foregroundColor(Color.black)
-                                                .frame(width: safeWidth, height: WKInterfaceDevice.current().screenBounds.height * 0.1, alignment: .leading)
-                                                .overlay {
-                                                    Text("Confirmation:")
-                                                        .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.9, alignment: .leading)
-                                                        .font(.system(size: 20))
-                                                        .fontWeight(.bold)
-                                                }
-                                            if address == "" {
-                                                Text("https://example.com")
-                                            } else {
-                                                Text("\(address)")
-                                                    .foregroundColor(Color.gray)
-                                            }
-                                        }
-                                    }
-                                    Section {
-                                        Picker("VA Display Type", selection: $selectedVAType){
-                                            ForEach(vaTypes, id: \.self) {str in
-                                                Text(str)
-                                            }
-                                        }
-                                        .frame(width: safeWidth,
-                                               height: WKInterfaceDevice.current().screenBounds.height * 0.3)
-                                        Picker("Activity Type", selection: $selectedActivityType){
-                                            ForEach(activityTypes, id: \.self) {str in
-                                                Text(str)
-                                            }
-                                        }
-                                        .frame(width: safeWidth,
-                                               height: WKInterfaceDevice.current().screenBounds.height * 0.3)
-                                    }
-                                }
-                            }.frame(width: WKInterfaceDevice.current().screenBounds.width * 0.9)
-                        })
+                List {
+                    HStack{
+                        Text("Settings")
+                            .fontWeight(.bold)
+                            .font(.system(size: 30))
+                        Spacer()
+                        Circle()
+                            .fill(Color.white.opacity(0.2))
+                            .overlay(content: {
+                                Text("X")
+                            })
+                            .frame(width: 40, height: 40)
+                            .onTapGesture(perform: changeSettings)
+                    }
+                    .listItemTint(.clear)
+                    
+                    TextField("Address (Required)", text: $address)
+                        .background(Color.primary)
+                        .cornerRadius(10)
+                        .listItemTint(.clear)
+                        .foregroundColor(.black)
+                        .frame(width: WKInterfaceDevice.current().screenBounds.width, alignment: .leading)
+                        .offset(x: -WKInterfaceDevice.current().screenBounds.width * 0.05)
+                    VStack {
+                        Text("Confirmation:")
+                            .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.9, alignment: .leading)
+                            .font(.system(size: 20))
+                            .fontWeight(.bold)
+                        if address == "" {
+                            Text("https://example.com")
+                                .frame(minWidth: 0, maxWidth: .infinity)
+                        } else {
+                            Text("\(address)")
+                                .foregroundColor(Color.gray)
+                                .frame(minWidth: 0, maxWidth: .infinity)
+                        }
+                    }
+                    .listItemTint(.clear)
+                    
+                    Picker("VA Display Type", selection: $selectedVAType){
+                        ForEach(vaTypes, id: \.self) {str in
+                            Text(str)
+                        }
+                    }
+                    .frame(width: safeWidth,
+                           height: WKInterfaceDevice.current().screenBounds.height * 0.3)
+                    
+                    Picker("Activity Type", selection: $selectedActivityType){
+                        ForEach(activityTypes, id: \.self) {str in
+                            Text(str)
+                        }
+                    }
+                    .frame(width: safeWidth,
+                           height: WKInterfaceDevice.current().screenBounds.height * 0.3)
                 }
+                .background(Color.black)
+                .frame(width: WKInterfaceDevice.current().screenBounds.width)
+                .listStyle(.carousel)
             }
         }
         .padding()
