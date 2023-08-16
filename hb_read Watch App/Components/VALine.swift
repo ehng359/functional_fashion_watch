@@ -17,6 +17,20 @@ struct VALine : View {
     @Binding var reset : Bool
     @State var isDragging : Bool = false
     @State var position : CGFloat = sliderWidth/2
+    
+    var tapGesture : some Gesture {
+        SpatialTapGesture()
+            .onEnded() { event in
+                position = event.location.x
+                print(position)
+                if position > sliderWidth {
+                    position = sliderWidth
+                } else if position < 0 {
+                    position = 0
+                }
+                valence = 2 * position/sliderWidth - 1
+            }
+    }
 
     var dragGesture : some Gesture {
         DragGesture()
@@ -25,13 +39,14 @@ struct VALine : View {
                 let newValue = position + event.translation.width
                 if newValue > sliderWidth {
                     position = sliderWidth
-                    return
                 } else if newValue < 0 {
                     position = 0
-                    return
+                } else {
+                    position = newValue
                 }
-                position = newValue
                 valence = 2 * position/sliderWidth - 1
+                print(safeWidth/2)
+                print(position)
             }
             .onEnded() { event in
                 valence = 2 * position/sliderWidth - 1
@@ -41,23 +56,32 @@ struct VALine : View {
 
     var body : some View {
         Rectangle()
-            .frame(width: sliderWidth, height: sliderHeight)
-            .cornerRadius(25)
+            .frame(width: safeWidth, height: safeWidth)
             .overlay {
                 ZStack {
                     Text("Valence")
-                        .position(x: WKInterfaceDevice.current().screenBounds.width * 0.2, y: -WKInterfaceDevice.current().screenBounds.height/4)
+                        .position(x: WKInterfaceDevice.current().screenBounds.width * 0.2, y: WKInterfaceDevice.current().screenBounds.height * 0.05)
                         .fontWeight(.bold)
                         .font(.system(size: 28))
+
+                    Rectangle()
+                        .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.75, height: sliderHeight)
+                        .position(x: safeWidth/2, y: safeWidth/2)
+                        .cornerRadius(25)
+                        .offset(x: -WKInterfaceDevice.current().screenBounds.width * 0.035 )
+
+
                     Circle()
                         .frame(width: dragComponentRadius, height: dragComponentRadius)
                         .foregroundColor(.blue)
                         .gesture(dragGesture)
-                        .position(x: position, y: sliderHeight/2)
+                        .position(x: position, y: safeWidth/2)
                     Text("\(valence)")
                         .offset(y: 15)
+
                 }
-                .offset(y: 7)
+                .foregroundColor(.white)
+                .offset(x: WKInterfaceDevice.current().screenBounds.width * 0.035 )
             }
             .onChange(of: reset) {_ in
                 reset = false
@@ -66,5 +90,7 @@ struct VALine : View {
                     position = sliderWidth/2
                 }
             }
+            .gesture(tapGesture)
+            .foregroundColor(.black)
     }
 }

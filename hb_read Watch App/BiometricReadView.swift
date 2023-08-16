@@ -57,7 +57,9 @@ struct BiometricReadView: View {
     @State var valence : CGFloat = 0
     @State var resetLocation : Bool = false
     
-    @State var crownRotation = 0.0
+    // Form information
+    @State var formValence = 0.00
+    @State var formArousal = 0.00
     
     init() {
         healthStore = HKHealthStore()
@@ -126,12 +128,59 @@ struct BiometricReadView: View {
                     .frame(width: safeWidth, height: safeWidth)
                     .listItemTint(.clear)
                 case "Form":
-                    VAForm(
-                        valence: Binding<CGFloat>(get: { vaGridCoord.x }, set: { vaGridCoord.x = $0 }),
-                        arousal: Binding<CGFloat>(get: { vaGridCoord.y }, set: { vaGridCoord.y = $0 }),
-                        reset: Binding<Bool>(get: { resetLocation }, set: { resetLocation = $0 })
-                    )
-                    .frame(width: safeWidth, height: safeWidth)
+                    HStack {
+                        Text("Valence: ")
+                            .offset(x: WKInterfaceDevice.current().screenBounds.width * 0.1)
+                        Spacer()
+                        TextField("Valence", value: $formValence, format: .number)
+                            .onSubmit {
+                                if formValence > 1 {
+                                    formValence = 1
+                                } else if formValence < 0 {
+                                    formValence = 0
+                                }
+                            }
+                            .offset(x: WKInterfaceDevice.current().screenBounds.width * 0.1)
+                            .foregroundColor(.black)
+                    }
+                    .background(.primary)
+                    .foregroundColor(.secondary)
+                    .frame(width: safeWidth, height:  WKInterfaceDevice.current().screenBounds.width * 0.15)
+                    .cornerRadius(10)
+                    .listItemTint(.clear)
+                    
+                    HStack {
+                        Text("Arousal: ")
+                            .offset(x: WKInterfaceDevice.current().screenBounds.width * 0.1)
+                        Spacer()
+                        TextField("Arousal", value: $formArousal, format: .number)
+                            .onSubmit {
+                                if formArousal > 1 {
+                                    formArousal = 1
+                                } else if formArousal < 0 {
+                                    formArousal = 0
+                                }
+                            }
+                            .offset(x: WKInterfaceDevice.current().screenBounds.width * 0.1)
+                            .foregroundColor(.black)
+                    }
+                    .background(.primary)
+                    .foregroundColor(.secondary)
+                    .frame(width: safeWidth, height:  WKInterfaceDevice.current().screenBounds.width * 0.15)
+                    .cornerRadius(10)
+                    .listItemTint(.clear)
+                    
+                    Button("Submit") {
+                        vaGridCoord.x = formValence
+                        vaGridCoord.y = formArousal
+                        formValence = 0
+                        formArousal = 0
+                    }
+                    .frame(width: safeWidth, height: WKInterfaceDevice.current().screenBounds.width * 0.15)
+                    .background(Color.red)
+                    .foregroundColor(.white)
+                    .fontWeight(.bold)
+                    .cornerRadius(10)
                     .listItemTint(.clear)
                 case _:
                     Rectangle()
@@ -179,8 +228,9 @@ struct BiometricReadView: View {
                         .cornerRadius(10)
                         .listItemTint(.clear)
                         .foregroundColor(.black)
-                        .frame(width: WKInterfaceDevice.current().screenBounds.width, alignment: .leading)
+                        .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.9, alignment: .center)
                         .offset(x: -WKInterfaceDevice.current().screenBounds.width * 0.05)
+
                     VStack {
                         Text("Confirmation:")
                             .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.9, alignment: .leading)
