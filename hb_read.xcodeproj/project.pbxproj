@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		580129992A8FF97E00C5E50A /* BiometricWorkoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 580129982A8FF97E00C5E50A /* BiometricWorkoutManager.swift */; };
 		584BBC422A81A970005F74DC /* VAGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 584BBC412A81A970005F74DC /* VAGrid.swift */; };
 		58A4616B2A534AAF00C7D28D /* hb_read Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 58A4616A2A534AAF00C7D28D /* hb_read Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		58A461702A534AAF00C7D28D /* hb_readApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58A4616F2A534AAF00C7D28D /* hb_readApp.swift */; };
@@ -58,6 +59,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		580129982A8FF97E00C5E50A /* BiometricWorkoutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricWorkoutManager.swift; sourceTree = "<group>"; };
 		5811EDAA2A5CAD9B0090000E /* hb-read-Watch-App-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "hb-read-Watch-App-Info.plist"; sourceTree = SOURCE_ROOT; };
 		584BBC412A81A970005F74DC /* VAGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VAGrid.swift; sourceTree = "<group>"; };
 		58693AD12A56418800F6BFDA /* hb_read Watch App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "hb_read Watch App.entitlements"; sourceTree = "<group>"; };
@@ -129,6 +131,7 @@
 				58693AD12A56418800F6BFDA /* hb_read Watch App.entitlements */,
 				58A4616F2A534AAF00C7D28D /* hb_readApp.swift */,
 				58A461712A534AAF00C7D28D /* BiometricReadView.swift */,
+				580129982A8FF97E00C5E50A /* BiometricWorkoutManager.swift */,
 				58A461732A534AB000C7D28D /* Assets.xcassets */,
 				58A461752A534AB000C7D28D /* Preview Content */,
 			);
@@ -327,6 +330,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				580129992A8FF97E00C5E50A /* BiometricWorkoutManager.swift in Sources */,
 				58A461722A534AAF00C7D28D /* BiometricReadView.swift in Sources */,
 				58A461702A534AAF00C7D28D /* hb_readApp.swift in Sources */,
 				58BE7C072A86CC2900880E0E /* VALine.swift in Sources */,

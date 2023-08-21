@@ -35,9 +35,9 @@ struct BiometricReadView: View {
         }
     }
     
+    // Query Information
     @State var healthStore : HKHealthStore
-    @State var workoutSession : HKWorkoutSession?
-    @State var workoutBuilder : HKLiveWorkoutBuilder?
+    @State var workoutDelegate : BiometricWorkoutManager
     
     @State var settings : Bool = false
     @State var queryHasSent : Bool = false
@@ -51,7 +51,7 @@ struct BiometricReadView: View {
     @State var recording : Bool = false
     @State var recordingStr : String = "Start Recording"
     
-    @State var address : String = ""
+    @State var address : String = "https://biometrics.uclalemur.com"
     
     @State var vaGridCoord : CGPoint = CGPoint(x: 0, y: 0)
     @State var valence : CGFloat = 0
@@ -63,11 +63,11 @@ struct BiometricReadView: View {
     
     init() {
         healthStore = HKHealthStore()
-        
+        workoutDelegate = BiometricWorkoutManager()
+
         let biometric_info =
             Set([
                 HKQuantityType(.heartRate),
-                HKQuantityType(.heartRateVariabilitySDNN),
                 HKQuantityType(.restingHeartRate),
                 HKQuantityType(.respiratoryRate),
                 HKQuantityType.workoutType()
@@ -77,6 +77,7 @@ struct BiometricReadView: View {
                 print("Error has occurred")
             }
         }
+        workoutDelegate.requestAuthorization()
     }
     
     var body: some View {
@@ -287,42 +288,13 @@ extension BiometricReadView {
             sendHTTPRequest(forRequestType: .PUT, forBiometricType: .heartRate)
             recording = !recording
             
-            workoutSession!.end()
-            workoutBuilder!.endCollection(withEnd: .now) { (success, error) in
-                guard success else {
-                    print("Error ending workout builder.")
-                    return
-                }
-                print("Successfully ended live session.")
-            }
+            workoutDelegate.endSession()
             return
         }
-
         if (address != "") {
             recordingStr = "Stop Recording"
             recording = !recording
-            
-            let config = HKWorkoutConfiguration()
-            config.activityType = .running
-            config.locationType = .outdoor
-            
-            do {
-                workoutSession = try HKWorkoutSession(healthStore: healthStore, configuration: config)
-                workoutBuilder = workoutSession!.associatedWorkoutBuilder()
-            } catch {
-                print("Error building workout session with given configurations.")
-            }
-            workoutBuilder!.dataSource = HKLiveWorkoutDataSource(healthStore: healthStore, workoutConfiguration: config)
-            workoutBuilder!.shouldCollectWorkoutEvents = false
-            
-            workoutSession!.startActivity(with: .now)
-            workoutBuilder!.beginCollection(withStart: .now) { (success, error) in
-                guard success else {
-                    print("Error has occured in collecting activity information.")
-                    return
-                }
-                print("Live session started successfully")
-            }
+            workoutDelegate.startSession()
         } else {
             print("No address has been inputted. Recording was not initiated.")
         }
@@ -351,15 +323,12 @@ extension BiometricReadView {
         timeOfSample = time
         switch(type){
         case .heartRate:
-            print("HR")
             hbValue = newValue
             return
         case .respiratoryRate:
-            print("RR")
             rrValue = newValue
             return
         case .restingHeartRate:
-            print("RHR")
             rhrValue = newValue
             return
         case _:
@@ -369,7 +338,6 @@ extension BiometricReadView {
     
     /// Sends a generic HTTP Request to a hosted server to publish recorded values.
     func sendHTTPRequest (forRequestType requestType : RequestType, forBiometricType biometricType : BiometricType) -> Void {
-        print("coordChosen = ", (vaGridCoord.x != 0 || vaGridCoord.y != 0))
         if address != "" && recording == true   {
             print("Currently making \(requestType.rawValue) request")
             
@@ -379,7 +347,7 @@ extension BiometricReadView {
             }
             
             var request = URLRequest(url: url)
-            print("Secured URL: \(url)")
+            print("Secured URL: \(address == "https://biometrics.uclalemur.com" ? "DEFAULT" : address)")
             
             request.httpMethod = requestType.rawValue
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -462,8 +430,6 @@ extension BiometricReadView {
                     
                     if lastSample != nil  {
                         prevHR = lastSample!.quantity.doubleValue(for: unitMeasurement)
-                        
-                        print("\(Int(prevHR))")
                         updateBiometricState(withType: type, withValue: Int(prevHR), withTime: lastSample!.endDate.description)
                     }
                 }
@@ -512,9 +478,9 @@ extension BiometricReadView {
             rhrQuery.updateHandler = rhrUpdateHandler
             
             print("Executing Query")
-            healthStore.execute(hrQuery)
             healthStore.execute(rhrQuery)
             healthStore.execute(rrQuery)
+            healthStore.execute(hrQuery)
             
             queryHasSent = true
         }
@@ -522,19 +488,17 @@ extension BiometricReadView {
 }
 
 // All necessary enumerations to indicate differences in values being updated within the view.
-extension BiometricReadView {
-    enum BiometricType {
-        case heartRate
-        case restingHeartRate
-        case heartRateVar
-        case respiratoryRate
-        case none
-    }
-    
-    enum RequestType : String {
-        case PUT = "PUT"
-        case POST = "POST"
-    }
+enum BiometricType {
+    case heartRate
+    case restingHeartRate
+    case heartRateVar
+    case respiratoryRate
+    case none
+}
+
+enum RequestType : String {
+    case PUT = "PUT"
+    case POST = "POST"
 }
 
 struct ContentView_Previews: PreviewProvider {

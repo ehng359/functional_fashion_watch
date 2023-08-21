@@ -50,7 +50,6 @@ struct VAGrid : View {
     var dragGesture : some Gesture {
         DragGesture()
             .onChanged() { event in
-                print(event)
                 isDragging = true
                 let width = geometry!.size.width/2
                 let oldLocation = nLocation
