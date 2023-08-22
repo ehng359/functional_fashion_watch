@@ -22,7 +22,6 @@ struct VALine : View {
         SpatialTapGesture()
             .onEnded() { event in
                 position = event.location.x
-                print(position)
                 if position > sliderWidth {
                     position = sliderWidth
                 } else if position < 0 {
@@ -45,8 +44,6 @@ struct VALine : View {
                     position = newValue
                 }
                 valence = 2 * position/sliderWidth - 1
-                print(safeWidth/2)
-                print(position)
             }
             .onEnded() { event in
                 valence = 2 * position/sliderWidth - 1

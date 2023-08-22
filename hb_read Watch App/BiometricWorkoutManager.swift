@@ -27,8 +27,9 @@ class BiometricWorkoutManager : NSObject, ObservableObject {
         } catch {
             print("Error building workout session with given configurations.")
         }
+        let predicate = HKQuery.predicateForObjects(from: HKSource.default())
         builder!.dataSource = HKLiveWorkoutDataSource(healthStore: healthstore, workoutConfiguration: config)
-        builder!.dataSource!.enableCollection(for: HKQuantityType(.respiratoryRate), predicate: nil)
+        builder!.dataSource!.enableCollection(for: HKQuantityType(.respiratoryRate), predicate: predicate)
         builder!.shouldCollectWorkoutEvents = true
         
         session!.delegate = self
@@ -46,21 +47,20 @@ class BiometricWorkoutManager : NSObject, ObservableObject {
     
     func endSession () -> Void {
         session!.end()
-        builder!.endCollection(withEnd: .now) { (success, error) in
-            guard success else {
-                print("Error ending workout builder.")
-                return
-            }
+        builder!.endCollection(withEnd: Date()) { (success, error) in
             self.builder!.finishWorkout(completion: {workout, error in
                 guard let error = error else {
                     self.workout = workout
+                    self.session = nil
+                    self.builder = nil
                     return
                 }
 
-                return print("Error occured in finishing workout. \(error)")
+                print("Error occured in finishing workout. \(error). Non-fatal Error.")
+                return
             })
-            print("Successfully ended live session.")
         }
+        print("Successfully ended live session.")
     }
     
     func requestAuthorization() -> Void {
@@ -100,11 +100,11 @@ extension BiometricWorkoutManager : HKLiveWorkoutBuilderDelegate {
         for type in collectedTypes {
             guard let quantityType = type as? HKQuantityType else { return }
             let statistics = workoutBuilder.statistics(for: quantityType)
+            // WIP for potentially gathering more RR data
         }
     }
     
     func workoutBuilderDidCollectEvent(_ workoutBuilder: HKLiveWorkoutBuilder) {
-        print("Builder: Event collected.")
     }
     
 }

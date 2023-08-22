@@ -52,6 +52,7 @@ struct BiometricReadView: View {
     @State var recordingStr : String = "Start Recording"
     
     @State var address : String = "https://biometrics.uclalemur.com"
+    @State var email : String = ""
     
     @State var vaGridCoord : CGPoint = CGPoint(x: 0, y: 0)
     @State var valence : CGFloat = 0
@@ -230,7 +231,6 @@ struct BiometricReadView: View {
                         .listItemTint(.clear)
                         .foregroundColor(.black)
                         .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.9, alignment: .center)
-                        .offset(x: -WKInterfaceDevice.current().screenBounds.width * 0.05)
 
                     VStack {
                         Text("Confirmation:")
@@ -242,6 +242,29 @@ struct BiometricReadView: View {
                                 .frame(minWidth: 0, maxWidth: .infinity)
                         } else {
                             Text("\(address)")
+                                .foregroundColor(Color.gray)
+                                .frame(minWidth: 0, maxWidth: .infinity)
+                        }
+                    }
+                    .listItemTint(.clear)
+                    
+                    TextField("Email", text: $email)
+                        .background(Color.primary)
+                        .cornerRadius(10)
+                        .listItemTint(.clear)
+                        .foregroundColor(.black)
+                        .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.9, alignment: .center)
+
+                    VStack {
+                        Text("Confirmation:")
+                            .frame(width: WKInterfaceDevice.current().screenBounds.width, alignment: .leading)
+                            .font(.system(size: 20))
+                            .fontWeight(.bold)
+                        if email == "" {
+                            Text("JohnDoe@gmail.com")
+                                .frame(minWidth: 0, maxWidth: .infinity)
+                        } else {
+                            Text("\(email)")
                                 .foregroundColor(Color.gray)
                                 .frame(minWidth: 0, maxWidth: .infinity)
                         }
@@ -353,7 +376,7 @@ extension BiometricReadView {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             
             let coordChosen = (vaGridCoord.x != 0 || vaGridCoord.y != 0)
-            let body : [String: AnyHashable] = [
+            let body : [String: AnyHashable] = requestType == .POST ? [
                 "id" : WKInterfaceDevice.current().identifierForVendor!.uuidString,
                 "date" : timeOfSample,
                 "heartBeat": biometricType == .heartRate ? hbValue : NSNull(),
@@ -363,6 +386,9 @@ extension BiometricReadView {
                 "valence" : coordChosen ? vaGridCoord.x : NSNull(),
                 "arousal" : coordChosen ? vaGridCoord.y : NSNull(),
                 "activity" : selectedActivityType
+            ] : [
+                "id" : WKInterfaceDevice.current().identifierForVendor!.uuidString,
+                "email" : email
             ]
             
             do {
