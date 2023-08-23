@@ -27,7 +27,12 @@ struct VALine : View {
                 } else if position < 0 {
                     position = 0
                 }
+                
+                let oldValence = valence
                 valence = 2 * position/sliderWidth - 1
+                if oldValence > 0 && valence < 0 || oldValence < 0 && valence > 0 {
+                    WKInterfaceDevice.current().play(.click)
+                }
             }
     }
 
@@ -43,7 +48,12 @@ struct VALine : View {
                 } else {
                     position = newValue
                 }
+                
+                let oldValence = valence
                 valence = 2 * position/sliderWidth - 1
+                if oldValence > 0 && valence < 0 || oldValence < 0 && valence > 0 {
+                    WKInterfaceDevice.current().play(.click)
+                }
             }
             .onEnded() { event in
                 valence = 2 * position/sliderWidth - 1
@@ -53,7 +63,7 @@ struct VALine : View {
 
     var body : some View {
         Rectangle()
-            .frame(width: safeWidth, height: safeWidth)
+            .frame(width: SAFE_WIDTH, height: SAFE_WIDTH)
             .overlay {
                 ZStack {
                     Text("Valence")
@@ -63,7 +73,7 @@ struct VALine : View {
 
                     Rectangle()
                         .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.75, height: sliderHeight)
-                        .position(x: safeWidth/2, y: safeWidth/2)
+                        .position(x: SAFE_WIDTH/2, y: SAFE_WIDTH/2)
                         .cornerRadius(25)
                         .offset(x: -WKInterfaceDevice.current().screenBounds.width * 0.035 )
 
@@ -72,7 +82,7 @@ struct VALine : View {
                         .frame(width: dragComponentRadius, height: dragComponentRadius)
                         .foregroundColor(.blue)
                         .gesture(dragGesture)
-                        .position(x: position, y: safeWidth/2)
+                        .position(x: position, y: SAFE_WIDTH/2)
                     Text("\(valence)")
                         .offset(y: 15)
 

@@ -18,7 +18,7 @@ class BiometricWorkoutManager : NSObject, ObservableObject {
     
     func startSession() -> Void {
         let config = HKWorkoutConfiguration()
-        config.activityType = .running
+        config.activityType = .mindAndBody
         config.locationType = .outdoor
         
         do {
@@ -47,18 +47,9 @@ class BiometricWorkoutManager : NSObject, ObservableObject {
     
     func endSession () -> Void {
         session!.end()
-        builder!.endCollection(withEnd: Date()) { (success, error) in
-            self.builder!.finishWorkout(completion: {workout, error in
-                guard let error = error else {
-                    self.workout = workout
-                    self.session = nil
-                    self.builder = nil
-                    return
-                }
-
-                print("Error occured in finishing workout. \(error). Non-fatal Error.")
-                return
-            })
+        builder!.endCollection(withEnd: .now) { _, _ in
+            self.session = nil
+            self.builder = nil
         }
         print("Successfully ended live session.")
     }
@@ -99,7 +90,7 @@ extension BiometricWorkoutManager : HKLiveWorkoutBuilderDelegate {
     func workoutBuilder(_ workoutBuilder: HKLiveWorkoutBuilder, didCollectDataOf collectedTypes: Set<HKSampleType>) {
         for type in collectedTypes {
             guard let quantityType = type as? HKQuantityType else { return }
-            let statistics = workoutBuilder.statistics(for: quantityType)
+//            let statistics = workoutBuilder.statistics(for: quantityType)
             // WIP for potentially gathering more RR data
         }
     }

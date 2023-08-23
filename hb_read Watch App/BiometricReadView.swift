@@ -11,12 +11,23 @@ import HealthKit
 // Make sure to add
 // Heart-rate variability, Respiratory rate, Resting Heart-rate
 // Note, cannot use variables of property wrappers inside of a view.
-let safeWidth = WKInterfaceDevice.current().screenBounds.width * 0.8
+let SAFE_WIDTH = WKInterfaceDevice.current().screenBounds.width * 0.8
+let PICKER_HEIGHT = WKInterfaceDevice.current().screenBounds.height * 0.3
+let MARGIN_OFFSET = WKInterfaceDevice.current().screenBounds.width * 0.1
+let FORM_COMPONENTS_HEIGHT = WKInterfaceDevice.current().screenBounds.width * 0.15
+let TEXT_FIELD_WIDTH = WKInterfaceDevice.current().screenBounds.width * 0.9
+
 
 struct BiometricReadView: View {
     @State private var hbValue : Int = 0 {
         didSet {
             sendHTTPRequest(forRequestType: .POST, forBiometricType: .heartRate)
+        }
+    }
+    
+    @State var hrvValue : Int = 0 {
+        didSet {
+            sendHTTPRequest(forRequestType: .POST, forBiometricType: .heartRateVar)
         }
     }
     @State var hrvTotalCount : Double = 0
@@ -48,11 +59,12 @@ struct BiometricReadView: View {
     @State var selectedActivityType = "None"
     let activityTypes = ["None", "Family/Friends", "Entertainment", "Exercising", "Work/Study", "Public", "Sleeping"]
     
-    @State var recording : Bool = false
-    @State var recordingStr : String = "Start Recording"
-    
     @State var address : String = "https://biometrics.uclalemur.com"
     @State var email : String = ""
+    @State var defaultEmailAddresses : [String] = ["", "alexiseblock@g.ucla.edu", "ehng359@g.ucla.edu"]
+    
+    @State var recording : Bool = false
+    @State var recordingStr : String = "Start Recording"
     
     @State var vaGridCoord : CGPoint = CGPoint(x: 0, y: 0)
     @State var valence : CGFloat = 0
@@ -96,23 +108,23 @@ struct BiometricReadView: View {
                             .frame(width: 40, height: 40)
                             .onTapGesture(perform: changeSettings)
                     }
-                    .offset(y: -WKInterfaceDevice.current().screenBounds.width * 0.10)
+                    .offset(y: -MARGIN_OFFSET)
                     HStack{
                         Text("♥")
                             .font(.system(size: 50))
                             .foregroundColor(.red)
                         Text("\(hbValue)")
                             .fontWeight(.bold)
-                            .font(.system(size: 50))
+                            .font(.system(size: 40))
                         VStack {
                             Text("BPM")
                                 .foregroundStyle(.red)
                         }
                     }
-                    .offset(y: -WKInterfaceDevice.current().screenBounds.width * 0.10)
+                    .offset(y: -MARGIN_OFFSET)
                 }
                 .listItemTint(.clear)
-                .frame(height: safeWidth)
+                .frame(height: SAFE_WIDTH)
                 
                 switch(selectedVAType) {
                 case "Grid":
@@ -120,19 +132,19 @@ struct BiometricReadView: View {
                         location: Binding<CGPoint>(get: { vaGridCoord }, set: { vaGridCoord = $0 }),
                         reset: Binding<Bool>(get: { resetLocation }, set: { resetLocation = $0 })
                     )
-                    .frame(width: safeWidth, height: safeWidth)
+                    .frame(width: SAFE_WIDTH, height: SAFE_WIDTH)
                     .listItemTint(.clear)
                 case "Line":
                     VALine(
                         valence: Binding<CGFloat>(get: { vaGridCoord.x }, set: { vaGridCoord.x = $0 }),
                         reset: Binding<Bool>(get: { resetLocation }, set: { resetLocation = $0 })
                     )
-                    .frame(width: safeWidth, height: safeWidth)
+                    .frame(width: SAFE_WIDTH, height: SAFE_WIDTH)
                     .listItemTint(.clear)
                 case "Form":
                     HStack {
                         Text("Valence: ")
-                            .offset(x: WKInterfaceDevice.current().screenBounds.width * 0.1)
+                            .offset(x: MARGIN_OFFSET)
                         Spacer()
                         TextField("Valence", value: $formValence, format: .number)
                             .onSubmit {
@@ -142,18 +154,18 @@ struct BiometricReadView: View {
                                     formValence = 0
                                 }
                             }
-                            .offset(x: WKInterfaceDevice.current().screenBounds.width * 0.1)
+                            .offset(x: MARGIN_OFFSET)
                             .foregroundColor(.black)
                     }
                     .background(.primary)
                     .foregroundColor(.secondary)
-                    .frame(width: safeWidth, height:  WKInterfaceDevice.current().screenBounds.width * 0.15)
+                    .frame(width: SAFE_WIDTH, height:  FORM_COMPONENTS_HEIGHT)
                     .cornerRadius(10)
                     .listItemTint(.clear)
                     
                     HStack {
                         Text("Arousal: ")
-                            .offset(x: WKInterfaceDevice.current().screenBounds.width * 0.1)
+                            .offset(x: MARGIN_OFFSET)
                         Spacer()
                         TextField("Arousal", value: $formArousal, format: .number)
                             .onSubmit {
@@ -163,12 +175,12 @@ struct BiometricReadView: View {
                                     formArousal = 0
                                 }
                             }
-                            .offset(x: WKInterfaceDevice.current().screenBounds.width * 0.1)
+                            .offset(x: MARGIN_OFFSET)
                             .foregroundColor(.black)
                     }
                     .background(.primary)
                     .foregroundColor(.secondary)
-                    .frame(width: safeWidth, height:  WKInterfaceDevice.current().screenBounds.width * 0.15)
+                    .frame(width: SAFE_WIDTH, height:  FORM_COMPONENTS_HEIGHT)
                     .cornerRadius(10)
                     .listItemTint(.clear)
                     
@@ -178,7 +190,7 @@ struct BiometricReadView: View {
                         formValence = 0
                         formArousal = 0
                     }
-                    .frame(width: safeWidth, height: WKInterfaceDevice.current().screenBounds.width * 0.15)
+                    .frame(width: SAFE_WIDTH, height: FORM_COMPONENTS_HEIGHT)
                     .background(Color.red)
                     .foregroundColor(.white)
                     .fontWeight(.bold)
@@ -192,12 +204,12 @@ struct BiometricReadView: View {
                             .foregroundColor(Color.black)
                         }
                         .cornerRadius(5)
-                        .frame(width: safeWidth, height: safeWidth)
+                        .frame(width: SAFE_WIDTH, height: SAFE_WIDTH)
                         .listItemTint(.clear)
                 }
             }
             .listStyle(.plain)
-            .frame(width: safeWidth * 1.1, height: safeWidth)
+            .frame(width: SAFE_WIDTH * 1.1, height: SAFE_WIDTH)
             
             if !settings {
                 Button("\(recordingStr)", action: changeRecording)
@@ -230,20 +242,22 @@ struct BiometricReadView: View {
                         .cornerRadius(10)
                         .listItemTint(.clear)
                         .foregroundColor(.black)
-                        .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.9, alignment: .center)
+                        .frame(width: TEXT_FIELD_WIDTH, alignment: .center)
 
                     VStack {
                         Text("Confirmation:")
-                            .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.9, alignment: .leading)
+                            .frame(width: TEXT_FIELD_WIDTH, alignment: .leading)
                             .font(.system(size: 20))
                             .fontWeight(.bold)
                         if address == "" {
                             Text("https://example.com")
                                 .frame(minWidth: 0, maxWidth: .infinity)
+                                .font(.system(size: 12))
                         } else {
                             Text("\(address)")
                                 .foregroundColor(Color.gray)
                                 .frame(minWidth: 0, maxWidth: .infinity)
+                                .font(.system(size: 12))
                         }
                     }
                     .listItemTint(.clear)
@@ -253,7 +267,7 @@ struct BiometricReadView: View {
                         .cornerRadius(10)
                         .listItemTint(.clear)
                         .foregroundColor(.black)
-                        .frame(width: WKInterfaceDevice.current().screenBounds.width * 0.9, alignment: .center)
+                        .frame(width: TEXT_FIELD_WIDTH, alignment: .center)
 
                     VStack {
                         Text("Confirmation:")
@@ -263,29 +277,49 @@ struct BiometricReadView: View {
                         if email == "" {
                             Text("JohnDoe@gmail.com")
                                 .frame(minWidth: 0, maxWidth: .infinity)
+                                .font(.system(size: 12))
                         } else {
                             Text("\(email)")
                                 .foregroundColor(Color.gray)
                                 .frame(minWidth: 0, maxWidth: .infinity)
+                                .font(.system(size: 12))
                         }
                     }
                     .listItemTint(.clear)
                     
+                    Picker("Default Email Address", selection: $email){
+                        ForEach(defaultEmailAddresses, id: \.self) {str in
+                            if str != "" {
+                                Text(str)
+                            } else {
+                                Text("No email selected.")
+                            }
+                        }
+                    }
+                    .frame(width: SAFE_WIDTH,
+                           height: PICKER_HEIGHT)
+                    .onChange(of: email, perform: {_ in
+                        if defaultEmailAddresses.count == 4 {
+                            _ = defaultEmailAddresses.popLast()
+                        }
+                        defaultEmailAddresses.append(email)
+                    })
+                
                     Picker("VA Display Type", selection: $selectedVAType){
                         ForEach(vaTypes, id: \.self) {str in
                             Text(str)
                         }
                     }
-                    .frame(width: safeWidth,
-                           height: WKInterfaceDevice.current().screenBounds.height * 0.3)
-                    
+                    .frame(width: SAFE_WIDTH,
+                           height: PICKER_HEIGHT)
+
                     Picker("Activity Type", selection: $selectedActivityType){
                         ForEach(activityTypes, id: \.self) {str in
                             Text(str)
                         }
                     }
-                    .frame(width: safeWidth,
-                           height: WKInterfaceDevice.current().screenBounds.height * 0.3)
+                    .frame(width: SAFE_WIDTH,
+                           height: PICKER_HEIGHT)
                 }
                 .background(Color.black)
                 .frame(width: WKInterfaceDevice.current().screenBounds.width)
@@ -324,22 +358,22 @@ extension BiometricReadView {
     }
     
     /// Computes the ongoing HRV value
-    func computeRunningHRV(_ heartBeat : Int) -> Int? {
-        var hrv : Int
-        if (heartBeat != 0) {
-            hrvTotalCount += 1
-            let RRInterval = 1.0/(Double(heartBeat)/60000.0)
-            if hrvTotalCount > 1.0 {
-                let rrDiff = RRInterval - prevRRInterval
-                hrvRunningSummation += rrDiff * rrDiff
-                let RMSSD = sqrt((1.0/(hrvTotalCount - 1.0)) * (hrvRunningSummation))
-                hrv = Int(RMSSD)
-                return hrv
-            }
-            prevRRInterval = RRInterval
-        }
-        return nil
-    }
+//    func computeRunningHRV(_ heartBeat : Int) -> Int? {
+//        var hrv : Int
+//        if (heartBeat != 0) {
+//            hrvTotalCount += 1
+//            let RRInterval = 1.0/(Double(heartBeat)/60000.0)
+//            if hrvTotalCount > 1.0 {
+//                let rrDiff = RRInterval - prevRRInterval
+//                hrvRunningSummation += rrDiff * rrDiff
+//                let RMSSD = sqrt((1.0/(hrvTotalCount - 1.0)) * (hrvRunningSummation))
+//                hrv = Int(RMSSD)
+//                return hrv
+//            }
+//            prevRRInterval = RRInterval
+//        }
+//        return nil
+//    }
     
     /// Functionally generates a change to particular the associated Biometric values held by the BiometricReadView.
     func updateBiometricState (withType type : BiometricType, withValue newValue : Int, withTime time : String) -> Void {
@@ -348,6 +382,8 @@ extension BiometricReadView {
         case .heartRate:
             hbValue = newValue
             return
+        case .heartRateVar:
+            hrvValue = newValue
         case .respiratoryRate:
             rrValue = newValue
             return
@@ -381,7 +417,7 @@ extension BiometricReadView {
                 "date" : timeOfSample,
                 "heartBeat": biometricType == .heartRate ? hbValue : NSNull(),
                 "respiratoryRate": biometricType == .respiratoryRate ? rrValue : NSNull(),
-                "heartBeatVar" : biometricType == .heartRate ? computeRunningHRV(hbValue) : NSNull(),
+                "heartBeatVar" : biometricType == .heartRateVar ? hrvValue : NSNull(),
                 "restingHeartRate" : biometricType == .restingHeartRate ? rhrValue : NSNull(),
                 "valence" : coordChosen ? vaGridCoord.x : NSNull(),
                 "arousal" : coordChosen ? vaGridCoord.y : NSNull(),
@@ -406,9 +442,7 @@ extension BiometricReadView {
                         let response = try JSONSerialization.jsonObject(with: data!, options: .mutableContainers) as? [String:Any]
                         if requestType == .PUT {
                             jsonResponse = response!
-                            let content = jsonResponse["JSON_Content"] as! [[String:AnyHashable]]
-                            print(jsonResponse["JSON_Content"]!)
-                            print(content)
+//                            let content = jsonResponse["JSON_Content"] as! [[String:AnyHashable]]
                         }
                         if coordChosen {
                             vaGridCoord = CGPoint(x:0, y:0)
@@ -483,6 +517,16 @@ extension BiometricReadView {
             )
             hrQuery.updateHandler = hrUpdateHandler
             
+            let hrvUpdateHandler = decideHandler(.heartRateVar)
+            let hrvQuery = HKAnchoredObjectQuery(
+                type: HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!,
+                predicate: predicate,
+                anchor: nil,
+                limit: HKObjectQueryNoLimit,
+                resultsHandler: hrvUpdateHandler
+            )
+            hrvQuery.updateHandler = hrvUpdateHandler
+            
             let rrUpdateHandler = decideHandler(.respiratoryRate)
             let rrQuery = HKAnchoredObjectQuery(
                 type: HKObjectType.quantityType(forIdentifier: .respiratoryRate)!,
@@ -505,6 +549,7 @@ extension BiometricReadView {
             
             print("Executing Query")
             healthStore.execute(rhrQuery)
+            healthStore.execute(hrvQuery)
             healthStore.execute(rrQuery)
             healthStore.execute(hrQuery)
             
