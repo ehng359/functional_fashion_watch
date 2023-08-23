@@ -120,7 +120,7 @@ struct BiometricReadView: View {
                         Text("♥")
                             .font(.system(size: dynamicFontSize(size: 50)))
                             .foregroundColor(.red)
-                        Text("100")
+                        Text("\(hbValue)")
                             .fontWeight(.bold)
                             .font(.system(size: dynamicFontSize(size: 50)))
                             .fixedSize(horizontal: true, vertical: false)
