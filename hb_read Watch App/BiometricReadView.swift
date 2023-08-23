@@ -13,10 +13,16 @@ import HealthKit
 // Note, cannot use variables of property wrappers inside of a view.
 let SAFE_WIDTH = WKInterfaceDevice.current().screenBounds.width * 0.8
 let PICKER_HEIGHT = WKInterfaceDevice.current().screenBounds.height * 0.3
-let MARGIN_OFFSET = WKInterfaceDevice.current().screenBounds.width * 0.1
+let MARGIN_OFFSET_WIDTH = WKInterfaceDevice.current().screenBounds.width * 0.1
+let MARGIN_OFFSET_HEIGHT = WKInterfaceDevice.current().screenBounds.height * 0.1
 let FORM_COMPONENTS_HEIGHT = WKInterfaceDevice.current().screenBounds.width * 0.15
 let TEXT_FIELD_WIDTH = WKInterfaceDevice.current().screenBounds.width * 0.9
+let SETTINGS_BUTTON_SIDE_LENGTH = WKInterfaceDevice.current().screenBounds.height * 0.175
 
+func dynamicFontSize(size fontSize : CGFloat) -> CGFloat {
+    let ratio = WKInterfaceDevice.current().screenBounds.width / 198
+    return ratio * fontSize
+}
 
 struct BiometricReadView: View {
     @State private var hbValue : Int = 0 {
@@ -105,23 +111,26 @@ struct BiometricReadView: View {
                                 Text("...")
                                     .offset(y:-3)
                             })
-                            .frame(width: 40, height: 40)
+                            .frame(width: SETTINGS_BUTTON_SIDE_LENGTH, height: SETTINGS_BUTTON_SIDE_LENGTH)
                             .onTapGesture(perform: changeSettings)
                     }
-                    .offset(y: -MARGIN_OFFSET)
+//                    .offset(y: -MARGIN_OFFSET_HEIGHT)
+                    Spacer()
                     HStack{
                         Text("♥")
-                            .font(.system(size: 50))
+                            .font(.system(size: dynamicFontSize(size: 50)))
                             .foregroundColor(.red)
-                        Text("\(hbValue)")
+                        Text("100")
                             .fontWeight(.bold)
-                            .font(.system(size: 40))
-                        VStack {
-                            Text("BPM")
-                                .foregroundStyle(.red)
-                        }
+                            .font(.system(size: dynamicFontSize(size: 50)))
+                            .fixedSize(horizontal: true, vertical: false)
+                            .background(.clear)
+                        Text("BPM")
+                            .foregroundStyle(.red)
                     }
-                    .offset(y: -MARGIN_OFFSET)
+                    .frame(width: TEXT_FIELD_WIDTH, alignment: .center)
+                    .offset(x: -MARGIN_OFFSET_WIDTH, y: -MARGIN_OFFSET_HEIGHT)
+                    Spacer()
                 }
                 .listItemTint(.clear)
                 .frame(height: SAFE_WIDTH)
@@ -144,7 +153,7 @@ struct BiometricReadView: View {
                 case "Form":
                     HStack {
                         Text("Valence: ")
-                            .offset(x: MARGIN_OFFSET)
+                            .offset(x: MARGIN_OFFSET_WIDTH)
                         Spacer()
                         TextField("Valence", value: $formValence, format: .number)
                             .onSubmit {
@@ -154,7 +163,7 @@ struct BiometricReadView: View {
                                     formValence = 0
                                 }
                             }
-                            .offset(x: MARGIN_OFFSET)
+                            .offset(x: MARGIN_OFFSET_WIDTH)
                             .foregroundColor(.black)
                     }
                     .background(.primary)
@@ -165,7 +174,7 @@ struct BiometricReadView: View {
                     
                     HStack {
                         Text("Arousal: ")
-                            .offset(x: MARGIN_OFFSET)
+                            .offset(x: MARGIN_OFFSET_WIDTH)
                         Spacer()
                         TextField("Arousal", value: $formArousal, format: .number)
                             .onSubmit {
@@ -175,7 +184,7 @@ struct BiometricReadView: View {
                                     formArousal = 0
                                 }
                             }
-                            .offset(x: MARGIN_OFFSET)
+                            .offset(x: MARGIN_OFFSET_WIDTH)
                             .foregroundColor(.black)
                     }
                     .background(.primary)
@@ -225,14 +234,14 @@ struct BiometricReadView: View {
                     HStack{
                         Text("Settings")
                             .fontWeight(.bold)
-                            .font(.system(size: 30))
+                            .font(.system(size: dynamicFontSize(size: 30)))
                         Spacer()
                         Circle()
                             .fill(Color.white.opacity(0.2))
                             .overlay(content: {
                                 Text("X")
                             })
-                            .frame(width: 40, height: 40)
+                            .frame(width: SETTINGS_BUTTON_SIDE_LENGTH, height: SETTINGS_BUTTON_SIDE_LENGTH)
                             .onTapGesture(perform: changeSettings)
                     }
                     .listItemTint(.clear)
@@ -247,7 +256,7 @@ struct BiometricReadView: View {
                     VStack {
                         Text("Confirmation:")
                             .frame(width: TEXT_FIELD_WIDTH, alignment: .leading)
-                            .font(.system(size: 20))
+                            .font(.system(size: dynamicFontSize(size: 16)))
                             .fontWeight(.bold)
                         if address == "" {
                             Text("https://example.com")
@@ -272,7 +281,7 @@ struct BiometricReadView: View {
                     VStack {
                         Text("Confirmation:")
                             .frame(width: WKInterfaceDevice.current().screenBounds.width, alignment: .leading)
-                            .font(.system(size: 20))
+                            .font(.system(size: dynamicFontSize(size: 16)))
                             .fontWeight(.bold)
                         if email == "" {
                             Text("JohnDoe@gmail.com")
@@ -326,7 +335,7 @@ struct BiometricReadView: View {
                 .listStyle(.carousel)
             }
         }
-        .padding()
+        .padding(EdgeInsets(top: MARGIN_OFFSET_HEIGHT, leading: MARGIN_OFFSET_WIDTH, bottom: MARGIN_OFFSET_HEIGHT, trailing: MARGIN_OFFSET_WIDTH))
         .onAppear(perform: getBiometrics)
     }
 }
