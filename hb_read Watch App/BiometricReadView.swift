@@ -54,7 +54,7 @@ struct BiometricReadView: View {
         }
     }
     
-    @State var ecgGraph : [(String, Double, Double)] = []
+    @State var ecgGraph : [ECGData] = []
     @State var showGraph : Bool = false
     
     // Query Information
@@ -230,12 +230,12 @@ struct BiometricReadView: View {
                 }
                 
                 if showGraph {
-                    Chart(ecgGraph, id: \.1) {
+                    Chart(ecgGraph, id: \.time) {
                         LineMark(
-                            x: .value("Time", $0.1),
-                            y: .value("Voltage", $0.2)
+                            x: .value("Time", $0.time),
+                            y: .value("Voltage", $0.voltage)
                         )
-                        .foregroundStyle(by: .value("type", $0.0))
+                        .foregroundStyle(by: .value("type", $0.type))
                     }
                     .scrollDisabled(false)
                     .chartXScale(domain: 0...3)
@@ -513,11 +513,15 @@ extension BiometricReadView {
             switch (requestType, biometricType){
             case (.POST, .ecg):
                 do {
-                    let ecgData = try JSONSerialization.data(withJSONObject: ecgGraph, options: .fragmentsAllowed)
-                    body = [
-                        "id": id,
-                        "ecgData": ecgData
-                    ]
+                    let ecgData = try JSONEncoder().encode(ecgGraph)
+                    if let stringifiedData = String(data: ecgData, encoding: .utf8) {
+                        body = [
+                            "id": id,
+                            "ecgData": stringifiedData
+                        ]
+                    } else {
+                        return
+                    }
                 } catch {
                     print("Error in ECG Graph Structure.")
                     return
@@ -676,7 +680,7 @@ extension BiometricReadView {
                     switch(result) {
                     case .measurement(let measurement):
                         if let voltageQuantity = measurement.quantity(for: .appleWatchSimilarToLeadI) {
-                            ecgGraph.append(("Raw", measurement.timeSinceSampleStart, voltageQuantity.doubleValue(for: .voltUnit(with: .milli))))
+                            ecgGraph.append(ECGData(type: "Raw", time: measurement.timeSinceSampleStart, voltage: voltageQuantity.doubleValue(for: .voltUnit(with: .milli ))))
                         }
                     case .done:
                         sendHTTPRequest(forRequestType: .POST, forBiometricType: .ecg)
@@ -718,11 +722,11 @@ enum RequestType : String {
     case POST = "POST"
 }
 
-//struct ECGData : Hashable {
-//    var string : String
-//    var time : Double
-//    var voltage : Double
-//}
+struct ECGData : Codable {
+    var type : String
+    var time : Double
+    var voltage : Double
+}
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {

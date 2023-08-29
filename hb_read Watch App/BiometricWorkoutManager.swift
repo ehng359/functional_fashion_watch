@@ -46,12 +46,17 @@ class BiometricWorkoutManager : NSObject, ObservableObject {
     }
     
     func endSession () -> Void {
-        session!.end()
-        builder!.endCollection(withEnd: .now) { _, _ in
-            self.session = nil
-            self.builder = nil
+        if let session = session, let builder = builder {
+            session.end()
+            builder.endCollection(withEnd: .now) { _, _ in
+                self.session = nil
+                self.builder = nil
+            }
+            print("Successfully ended live session.")
+        } else {
+            session = nil
+            builder = nil
         }
-        print("Successfully ended live session.")
     }
     
     func requestAuthorization() -> Void {
@@ -75,7 +80,6 @@ extension BiometricWorkoutManager : HKWorkoutSessionDelegate {
         }
         
         if toState == .ended {
-            endSession()
             print("State switch to ended.")
         }
     }
