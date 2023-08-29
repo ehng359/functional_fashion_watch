@@ -88,11 +88,6 @@ extension BiometricWorkoutManager : HKWorkoutSessionDelegate {
 
 extension BiometricWorkoutManager : HKLiveWorkoutBuilderDelegate {
     func workoutBuilder(_ workoutBuilder: HKLiveWorkoutBuilder, didCollectDataOf collectedTypes: Set<HKSampleType>) {
-        for type in collectedTypes {
-            guard let quantityType = type as? HKQuantityType else { return }
-//            let statistics = workoutBuilder.statistics(for: quantityType)
-            // WIP for potentially gathering more RR data
-        }
     }
     
     func workoutBuilderDidCollectEvent(_ workoutBuilder: HKLiveWorkoutBuilder) {

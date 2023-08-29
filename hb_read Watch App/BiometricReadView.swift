@@ -7,6 +7,8 @@
 
 import SwiftUI
 import HealthKit
+import Accelerate
+import Charts
 
 // Make sure to add
 // Heart-rate variability, Respiratory rate, Resting Heart-rate
@@ -52,6 +54,9 @@ struct BiometricReadView: View {
         }
     }
     
+    @State var ecgGraph : [(String, Double, Double)] = []
+    @State var showGraph : Bool = false
+    
     // Query Information
     @State var healthStore : HKHealthStore
     @State var workoutDelegate : BiometricWorkoutManager
@@ -84,14 +89,21 @@ struct BiometricReadView: View {
         healthStore = HKHealthStore()
         workoutDelegate = BiometricWorkoutManager()
 
-        let biometric_info =
+        let to_share_info =
             Set([
                 HKQuantityType(.heartRate),
                 HKQuantityType(.restingHeartRate),
                 HKQuantityType(.respiratoryRate),
-                HKQuantityType.workoutType()
             ])
-        healthStore.requestAuthorization(toShare: biometric_info, read: biometric_info) {(success, error) in
+        
+        let to_read_info =
+            Set([
+                HKQuantityType(.heartRate),
+                HKQuantityType(.restingHeartRate),
+                HKQuantityType(.respiratoryRate),
+                HKQuantityType.electrocardiogramType()
+            ])
+        healthStore.requestAuthorization(toShare: to_share_info, read: to_read_info) {(success, error) in
             if !success {
                 print("Error has occurred")
             }
@@ -216,6 +228,22 @@ struct BiometricReadView: View {
                         .frame(width: SAFE_WIDTH, height: SAFE_WIDTH)
                         .listItemTint(.clear)
                 }
+                
+                if showGraph {
+                    Chart(ecgGraph, id: \.1) {
+                        LineMark(
+                            x: .value("Time", $0.1),
+                            y: .value("Voltage", $0.2)
+                        )
+                        .foregroundStyle(by: .value("type", $0.0))
+                    }
+                    .scrollDisabled(false)
+                    .chartXScale(domain: 0...3)
+                    .chartXAxisLabel("Time (s)")
+                    .chartYAxisLabel("Voltage (mV)")
+                    .frame(width: SAFE_WIDTH, height: SAFE_WIDTH)
+                    .listItemTint(.clear)
+                }
             }
             .listStyle(.plain)
             .frame(width: SAFE_WIDTH * 1.1, height: SAFE_WIDTH)
@@ -311,7 +339,9 @@ struct BiometricReadView: View {
                         if defaultEmailAddresses.count == 4 {
                             _ = defaultEmailAddresses.popLast()
                         }
-                        defaultEmailAddresses.append(email)
+                        if !defaultEmailAddresses.contains(email) {
+                            defaultEmailAddresses.append(email)
+                        }
                     })
                 
                     Picker("VA Display Type", selection: $selectedVAType){
@@ -366,6 +396,61 @@ extension BiometricReadView {
         }
     }
     
+//    func generateSecant (with voltageReadings : [(String, Double, Double)], position : Double) -> [(String, Double, Double)]{
+//        let dataLength : Int = voltageReadings.count
+//        let type : String = position == 1 ? "Top" : "Bottom"
+//        var newTime : [Double] = [voltageReadings.first!.1]
+//        var newVoltage : [Double] = [voltageReadings.first!.2]
+////        var newReadings : [(String, Double, Double)] = [(type, voltageReadings.first!.1, voltageReadings.first!.2)]
+//        var i : Int = 1
+//
+//        while i < dataLength {
+//            var slopeMax : Double = -Double.infinity
+//            var iOptimal : Int? = nil
+//
+//            let window = voltageReadings[i - 1].1 + 0.4
+//            var j : Int = i + 1
+//            while j < dataLength && voltageReadings[j].1 < window {
+//                let slope = ((voltageReadings[j].2 - voltageReadings[i].2) / (voltageReadings[j].1 - voltageReadings[j].1)) * position
+//
+//                if slope >= slopeMax {
+//                    slopeMax = slope
+//                    iOptimal = j
+//                }
+//                j += 1
+//            }
+//            if let optimal = iOptimal {
+//                newTime.append(voltageReadings[optimal].1)
+//                newVoltage.append(voltageReadings[optimal].2)
+////                newReadings.append((type, voltageReadings[optimal].1, voltageReadings[optimal].2))
+//                i = optimal
+//            } else {
+//                i = j
+//            }
+//        }
+//
+//        // To make sure that both top and bottom secant remains the same size to be subtracted from.
+//        let controlVector : [ Double ] = vDSP.ramp(in: 0 ... Double(newTime.count) - 1, count: 2048)
+//        print(newTime.count)
+//        print(newVoltage.count)
+////        let resultTime : [Double] = vDSP.linearInterpolate(elementsOf: newTime, using: controlVector)
+////        let resultVoltage : [Double] = vDSP.linearInterpolate(elementsOf: newVoltage, using: controlVector)
+//
+//        return []
+//    }
+//
+    /// Determines the RR intervals and computes a HRV for the given sample to provide.
+    /// Note: Uses the fact that heartbeats will create voltage readings from high local maximum to low local minimum.
+    func computeRRIntervals (with voltageReadings : [(String, Double, Double)]) -> Void {
+        
+        // Make HTTP request to the server to perform computation (offload the information)
+        sendHTTPRequest(forRequestType: .POST, forBiometricType: .ecg)
+//        linearInterpolate(elementsOf: [1, 2], using: Double)
+//        let upper = generateSecant(with: voltageReadings, position: 1)
+//        let lower = generateSecant(with: voltageReadings, position: -1)
+        
+    }
+    
     /// Computes the ongoing HRV value
 //    func computeRunningHRV(_ heartBeat : Int) -> Int? {
 //        var hrv : Int
@@ -407,34 +492,54 @@ extension BiometricReadView {
     /// Sends a generic HTTP Request to a hosted server to publish recorded values.
     func sendHTTPRequest (forRequestType requestType : RequestType, forBiometricType biometricType : BiometricType) -> Void {
         if address != "" && recording == true   {
-            print("Currently making \(requestType.rawValue) request")
+//            print("Currently making \(requestType.rawValue) request")
             
-            guard let url = URL(string: address) else {
+            let endpoint = address + (biometricType == .ecg ? "/process_ecg/" : "")
+            guard let url = URL(string: endpoint) else {
                 print("Error creating URL object")
                 return
             }
             
             var request = URLRequest(url: url)
-            print("Secured URL: \(address == "https://biometrics.uclalemur.com" ? "DEFAULT" : address)")
+//            print("Secured URL: \(address == "https://biometrics.uclalemur.com" ? "DEFAULT" : address)")
             
             request.httpMethod = requestType.rawValue
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             
             let coordChosen = (vaGridCoord.x != 0 || vaGridCoord.y != 0)
-            let body : [String: AnyHashable] = requestType == .POST ? [
-                "id" : WKInterfaceDevice.current().identifierForVendor!.uuidString,
-                "date" : timeOfSample,
-                "heartBeat": biometricType == .heartRate ? hbValue : NSNull(),
-                "respiratoryRate": biometricType == .respiratoryRate ? rrValue : NSNull(),
-                "heartBeatVar" : biometricType == .heartRateVar ? hrvValue : NSNull(),
-                "restingHeartRate" : biometricType == .restingHeartRate ? rhrValue : NSNull(),
-                "valence" : coordChosen ? vaGridCoord.x : NSNull(),
-                "arousal" : coordChosen ? vaGridCoord.y : NSNull(),
-                "activity" : selectedActivityType
-            ] : [
-                "id" : WKInterfaceDevice.current().identifierForVendor!.uuidString,
-                "email" : email
-            ]
+            let id = WKInterfaceDevice.current().identifierForVendor!.uuidString
+            
+            var body : [String: AnyHashable]
+            switch (requestType, biometricType){
+            case (.POST, .ecg):
+                do {
+                    let ecgData = try JSONSerialization.data(withJSONObject: ecgGraph, options: .fragmentsAllowed)
+                    body = [
+                        "id": id,
+                        "ecgData": ecgData
+                    ]
+                } catch {
+                    print("Error in ECG Graph Structure.")
+                    return
+                }
+            case (.PUT, _):
+                body = [
+                    "id" : id,
+                    "email" : email
+                ]
+            case (.POST, _):
+                body = [
+                    "id" : id,
+                    "date" : timeOfSample,
+                    "heartBeat": biometricType == .heartRate ? hbValue : NSNull(),
+                    "respiratoryRate": biometricType == .respiratoryRate ? rrValue : NSNull(),
+                    "heartBeatVar" : biometricType == .heartRateVar ? hrvValue : NSNull(),
+                    "restingHeartRate" : biometricType == .restingHeartRate ? rhrValue : NSNull(),
+                    "valence" : coordChosen ? vaGridCoord.x : NSNull(),
+                    "arousal" : coordChosen ? vaGridCoord.y : NSNull(),
+                    "activity" : selectedActivityType
+                ]
+            }
             
             do {
                 let requestBody = try JSONSerialization.data(withJSONObject: body, options: .fragmentsAllowed)
@@ -449,7 +554,7 @@ extension BiometricReadView {
                 if error == nil && data != nil{
                     do {
                         let response = try JSONSerialization.jsonObject(with: data!, options: .mutableContainers) as? [String:Any]
-                        if requestType == .PUT {
+                        if biometricType == .ecg {
                             jsonResponse = response!
 //                            let content = jsonResponse["JSON_Content"] as! [[String:AnyHashable]]
                         }
@@ -468,7 +573,7 @@ extension BiometricReadView {
                 
             }
             task.resume()
-            print("Finished \(requestType.rawValue) request")
+//            print("Finished \(requestType.rawValue) request")
         }
     }
     
@@ -489,7 +594,6 @@ extension BiometricReadView {
                 
                 let updateHandler: (HKAnchoredObjectQuery, [HKSample]?, [HKDeletedObject]?, HKQueryAnchor?, Error?) -> Void = {
                     query, samples, deletedObjects, queryAnchor, error in
-                    
                     var prevHR : Double = 0.0
                     guard let samples = samples as? [HKQuantitySample] else {
                         return
@@ -556,11 +660,43 @@ extension BiometricReadView {
             )
             rhrQuery.updateHandler = rhrUpdateHandler
             
+            let ecgQuery = HKAnchoredObjectQuery(
+                type: HKQuantityType.electrocardiogramType(),
+                predicate: predicate,
+                anchor: nil,
+                limit: HKObjectQueryNoLimit,
+                resultsHandler: { query, samples, deletedObjects, queryAnchor, error in
+                    return
+                }
+            )
+            
+            ecgQuery.updateHandler = { query, samples, deletedObjects, queryAnchor, error in
+                guard let ecgSample = samples!.last as? HKElectrocardiogram else { return }
+                let voltageQuery = HKElectrocardiogramQuery(ecgSample) { (query, result) in
+                    switch(result) {
+                    case .measurement(let measurement):
+                        if let voltageQuantity = measurement.quantity(for: .appleWatchSimilarToLeadI) {
+                            ecgGraph.append(("Raw", measurement.timeSinceSampleStart, voltageQuantity.doubleValue(for: .voltUnit(with: .milli))))
+                        }
+                    case .done:
+                        sendHTTPRequest(forRequestType: .POST, forBiometricType: .ecg)
+                    case .error(let error):
+                        // Handle the error here.
+                        print(error)
+                    case _:
+                        print("Result was of unknown type.")
+                    }
+                }
+                
+                healthStore.execute(voltageQuery)
+            }
+            
             print("Executing Query")
             healthStore.execute(rhrQuery)
             healthStore.execute(hrvQuery)
             healthStore.execute(rrQuery)
             healthStore.execute(hrQuery)
+            healthStore.execute(ecgQuery)
             
             queryHasSent = true
         }
@@ -573,6 +709,7 @@ enum BiometricType {
     case restingHeartRate
     case heartRateVar
     case respiratoryRate
+    case ecg
     case none
 }
 
@@ -580,6 +717,12 @@ enum RequestType : String {
     case PUT = "PUT"
     case POST = "POST"
 }
+
+//struct ECGData : Hashable {
+//    var string : String
+//    var time : Double
+//    var voltage : Double
+//}
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
