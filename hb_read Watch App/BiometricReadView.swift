@@ -126,7 +126,6 @@ struct BiometricReadView: View {
                             .frame(width: SETTINGS_BUTTON_SIDE_LENGTH, height: SETTINGS_BUTTON_SIDE_LENGTH)
                             .onTapGesture(perform: changeSettings)
                     }
-//                    .offset(y: -MARGIN_OFFSET_HEIGHT)
                     Spacer()
                     HStack{
                         Text("♥")
@@ -396,79 +395,6 @@ extension BiometricReadView {
         }
     }
     
-//    func generateSecant (with voltageReadings : [(String, Double, Double)], position : Double) -> [(String, Double, Double)]{
-//        let dataLength : Int = voltageReadings.count
-//        let type : String = position == 1 ? "Top" : "Bottom"
-//        var newTime : [Double] = [voltageReadings.first!.1]
-//        var newVoltage : [Double] = [voltageReadings.first!.2]
-////        var newReadings : [(String, Double, Double)] = [(type, voltageReadings.first!.1, voltageReadings.first!.2)]
-//        var i : Int = 1
-//
-//        while i < dataLength {
-//            var slopeMax : Double = -Double.infinity
-//            var iOptimal : Int? = nil
-//
-//            let window = voltageReadings[i - 1].1 + 0.4
-//            var j : Int = i + 1
-//            while j < dataLength && voltageReadings[j].1 < window {
-//                let slope = ((voltageReadings[j].2 - voltageReadings[i].2) / (voltageReadings[j].1 - voltageReadings[j].1)) * position
-//
-//                if slope >= slopeMax {
-//                    slopeMax = slope
-//                    iOptimal = j
-//                }
-//                j += 1
-//            }
-//            if let optimal = iOptimal {
-//                newTime.append(voltageReadings[optimal].1)
-//                newVoltage.append(voltageReadings[optimal].2)
-////                newReadings.append((type, voltageReadings[optimal].1, voltageReadings[optimal].2))
-//                i = optimal
-//            } else {
-//                i = j
-//            }
-//        }
-//
-//        // To make sure that both top and bottom secant remains the same size to be subtracted from.
-//        let controlVector : [ Double ] = vDSP.ramp(in: 0 ... Double(newTime.count) - 1, count: 2048)
-//        print(newTime.count)
-//        print(newVoltage.count)
-////        let resultTime : [Double] = vDSP.linearInterpolate(elementsOf: newTime, using: controlVector)
-////        let resultVoltage : [Double] = vDSP.linearInterpolate(elementsOf: newVoltage, using: controlVector)
-//
-//        return []
-//    }
-//
-    /// Determines the RR intervals and computes a HRV for the given sample to provide.
-    /// Note: Uses the fact that heartbeats will create voltage readings from high local maximum to low local minimum.
-    func computeRRIntervals (with voltageReadings : [(String, Double, Double)]) -> Void {
-        
-        // Make HTTP request to the server to perform computation (offload the information)
-        sendHTTPRequest(forRequestType: .POST, forBiometricType: .ecg)
-//        linearInterpolate(elementsOf: [1, 2], using: Double)
-//        let upper = generateSecant(with: voltageReadings, position: 1)
-//        let lower = generateSecant(with: voltageReadings, position: -1)
-        
-    }
-    
-    /// Computes the ongoing HRV value
-//    func computeRunningHRV(_ heartBeat : Int) -> Int? {
-//        var hrv : Int
-//        if (heartBeat != 0) {
-//            hrvTotalCount += 1
-//            let RRInterval = 1.0/(Double(heartBeat)/60000.0)
-//            if hrvTotalCount > 1.0 {
-//                let rrDiff = RRInterval - prevRRInterval
-//                hrvRunningSummation += rrDiff * rrDiff
-//                let RMSSD = sqrt((1.0/(hrvTotalCount - 1.0)) * (hrvRunningSummation))
-//                hrv = Int(RMSSD)
-//                return hrv
-//            }
-//            prevRRInterval = RRInterval
-//        }
-//        return nil
-//    }
-    
     /// Functionally generates a change to particular the associated Biometric values held by the BiometricReadView.
     func updateBiometricState (withType type : BiometricType, withValue newValue : Int, withTime time : String) -> Void {
         timeOfSample = time
@@ -487,6 +413,10 @@ extension BiometricReadView {
         case _:
             return
         }
+    }
+    
+    func handleResponse (for response : [String: Any], forRequestType requestType: RequestType, forBiometricType biometricType : BiometricType) {
+        print(response)
     }
     
     /// Sends a generic HTTP Request to a hosted server to publish recorded values.
@@ -558,9 +488,8 @@ extension BiometricReadView {
                 if error == nil && data != nil{
                     do {
                         let response = try JSONSerialization.jsonObject(with: data!, options: .mutableContainers) as? [String:Any]
-                        if biometricType == .ecg {
-                            jsonResponse = response!
-//                            let content = jsonResponse["JSON_Content"] as! [[String:AnyHashable]]
+                        if let response = response {
+                            handleResponse(for: response, forRequestType: requestType, forBiometricType: biometricType)
                         }
                         if coordChosen {
                             vaGridCoord = CGPoint(x:0, y:0)
@@ -577,7 +506,6 @@ extension BiometricReadView {
                 
             }
             task.resume()
-//            print("Finished \(requestType.rawValue) request")
         }
     }
     
@@ -676,6 +604,7 @@ extension BiometricReadView {
             
             ecgQuery.updateHandler = { query, samples, deletedObjects, queryAnchor, error in
                 guard let ecgSample = samples!.last as? HKElectrocardiogram else { return }
+                ecgGraph = []
                 let voltageQuery = HKElectrocardiogramQuery(ecgSample) { (query, result) in
                     switch(result) {
                     case .measurement(let measurement):
@@ -683,7 +612,9 @@ extension BiometricReadView {
                             ecgGraph.append(ECGData(type: "Raw", time: measurement.timeSinceSampleStart, voltage: voltageQuantity.doubleValue(for: .voltUnit(with: .milli ))))
                         }
                     case .done:
-                        sendHTTPRequest(forRequestType: .POST, forBiometricType: .ecg)
+                        DispatchQueue.global(qos: .background).async {
+                            sendHTTPRequest(forRequestType: .POST, forBiometricType: .ecg)
+                        }
                     case .error(let error):
                         // Handle the error here.
                         print(error)
