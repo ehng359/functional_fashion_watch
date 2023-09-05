@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		580129992A8FF97E00C5E50A /* BiometricWorkoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 580129982A8FF97E00C5E50A /* BiometricWorkoutManager.swift */; };
 		584BBC422A81A970005F74DC /* VAGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 584BBC412A81A970005F74DC /* VAGrid.swift */; };
+		589BD2302AA7A66D00F46F18 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 589BD22F2AA7A66D00F46F18 /* NotificationManager.swift */; };
 		58A4616B2A534AAF00C7D28D /* hb_read Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 58A4616A2A534AAF00C7D28D /* hb_read Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		58A461702A534AAF00C7D28D /* hb_readApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58A4616F2A534AAF00C7D28D /* hb_readApp.swift */; };
 		58A461722A534AAF00C7D28D /* BiometricReadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58A461712A534AAF00C7D28D /* BiometricReadView.swift */; };
@@ -63,6 +64,7 @@
 		5811EDAA2A5CAD9B0090000E /* hb-read-Watch-App-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "hb-read-Watch-App-Info.plist"; sourceTree = SOURCE_ROOT; };
 		584BBC412A81A970005F74DC /* VAGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VAGrid.swift; sourceTree = "<group>"; };
 		58693AD12A56418800F6BFDA /* hb_read Watch App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "hb_read Watch App.entitlements"; sourceTree = "<group>"; };
+		589BD22F2AA7A66D00F46F18 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		58A461642A534AAF00C7D28D /* hb_read.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = hb_read.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		58A4616A2A534AAF00C7D28D /* hb_read Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "hb_read Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		58A4616F2A534AAF00C7D28D /* hb_readApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = hb_readApp.swift; sourceTree = "<group>"; };
@@ -102,6 +104,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		589BD2312AA7F05600F46F18 /* Managers */ = {
+			isa = PBXGroup;
+			children = (
+				589BD22F2AA7A66D00F46F18 /* NotificationManager.swift */,
+				580129982A8FF97E00C5E50A /* BiometricWorkoutManager.swift */,
+			);
+			path = Managers;
+			sourceTree = "<group>";
+		};
 		58A4615D2A534AAF00C7D28D = {
 			isa = PBXGroup;
 			children = (
@@ -128,10 +139,10 @@
 			children = (
 				58BE7C0A2A86CC4200880E0E /* Components */,
 				5811EDAA2A5CAD9B0090000E /* hb-read-Watch-App-Info.plist */,
+				589BD2312AA7F05600F46F18 /* Managers */,
 				58693AD12A56418800F6BFDA /* hb_read Watch App.entitlements */,
 				58A4616F2A534AAF00C7D28D /* hb_readApp.swift */,
 				58A461712A534AAF00C7D28D /* BiometricReadView.swift */,
-				580129982A8FF97E00C5E50A /* BiometricWorkoutManager.swift */,
 				58A461732A534AB000C7D28D /* Assets.xcassets */,
 				58A461752A534AB000C7D28D /* Preview Content */,
 			);
@@ -331,6 +342,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				580129992A8FF97E00C5E50A /* BiometricWorkoutManager.swift in Sources */,
+				589BD2302AA7A66D00F46F18 /* NotificationManager.swift in Sources */,
 				58A461722A534AAF00C7D28D /* BiometricReadView.swift in Sources */,
 				58A461702A534AAF00C7D28D /* hb_readApp.swift in Sources */,
 				58BE7C072A86CC2900880E0E /* VALine.swift in Sources */,

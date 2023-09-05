@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Foundation
 import HealthKit
 import Accelerate
 import Charts
@@ -35,16 +36,13 @@ struct BiometricReadView: View {
     
     @State var hrvValue : Int = 0 {
         didSet {
-            sendHTTPRequest(forRequestType: .POST, forBiometricType: .heartRateVar)
+//            sendHTTPRequest(forRequestType: .POST, forBiometricType: .heartRateVar)
         }
     }
-    @State var hrvTotalCount : Double = 0
-    @State var hrvRunningSummation : Double = 0
-    @State var prevRRInterval : Double = 0
     
     @State var rrValue : Int = 0 {
         didSet {
-            sendHTTPRequest(forRequestType: .POST, forBiometricType: .respiratoryRate)
+//            sendHTTPRequest(forRequestType: .POST, forBiometricType: .respiratoryRate)
         }
     }
     
@@ -85,6 +83,8 @@ struct BiometricReadView: View {
     @State var formValence = 0.00
     @State var formArousal = 0.00
     
+    let notifDelegate = NotificationManager()
+    
     init() {
         healthStore = HKHealthStore()
         workoutDelegate = BiometricWorkoutManager()
@@ -109,6 +109,7 @@ struct BiometricReadView: View {
             }
         }
         workoutDelegate.requestAuthorization()
+        notifDelegate.requestAuthorization()
     }
     
     var body: some View {
@@ -401,22 +402,32 @@ extension BiometricReadView {
         switch(type){
         case .heartRate:
             hbValue = newValue
-            return
-        case .heartRateVar:
-            hrvValue = newValue
-        case .respiratoryRate:
-            rrValue = newValue
-            return
+//        case .heartRateVar:
+//            hrvValue = newValue
+//        case .respiratoryRate:
+//            rrValue = newValue
         case .restingHeartRate:
             rhrValue = newValue
-            return
         case _:
             return
         }
     }
     
     func handleResponse (for response : [String: Any], forRequestType requestType: RequestType, forBiometricType biometricType : BiometricType) {
-        print(response)
+        
+        switch((requestType, biometricType)){
+        case (.POST, .ecg):
+            if let hrv = response["hrv"] as? Int{
+                hrvValue = hrv
+            }
+            if let rr = response["rr"] as? Int {
+                rrValue = rr
+            }
+            print(response)
+            notifDelegate.generateRequest()
+        case _:
+            return
+        }
     }
     
     /// Sends a generic HTTP Request to a hosted server to publish recorded values.
@@ -466,13 +477,14 @@ extension BiometricReadView {
                     "id" : id,
                     "date" : timeOfSample,
                     "heartBeat": biometricType == .heartRate ? hbValue : NSNull(),
-                    "respiratoryRate": biometricType == .respiratoryRate ? rrValue : NSNull(),
-                    "heartBeatVar" : biometricType == .heartRateVar ? hrvValue : NSNull(),
+                    "respiratoryRate": rrValue != 0 ? rrValue : NSNull(),
+                    "heartBeatVar" : hrvValue != 0 ? hrvValue : NSNull(),
                     "restingHeartRate" : biometricType == .restingHeartRate ? rhrValue : NSNull(),
                     "valence" : coordChosen ? vaGridCoord.x : NSNull(),
                     "arousal" : coordChosen ? vaGridCoord.y : NSNull(),
                     "activity" : selectedActivityType
                 ]
+                rrValue = 0
             }
             
             do {
@@ -628,8 +640,8 @@ extension BiometricReadView {
             
             print("Executing Query")
             healthStore.execute(rhrQuery)
-            healthStore.execute(hrvQuery)
-            healthStore.execute(rrQuery)
+//            healthStore.execute(hrvQuery)
+//            healthStore.execute(rrQuery)
             healthStore.execute(hrQuery)
             healthStore.execute(ecgQuery)
             
