@@ -83,7 +83,7 @@ struct BiometricReadView: View {
     @State var formValence = 0.00
     @State var formArousal = 0.00
     
-    let notifDelegate = NotificationManager()
+    @ObservedObject var notifDelegate = NotificationManager()
     
     init() {
         healthStore = HKHealthStore()
@@ -114,139 +114,152 @@ struct BiometricReadView: View {
     
     var body: some View {
         ZStack {
-            List{
-                VStack {
-                    HStack {
-                        Spacer(minLength: 5)
-                        Circle()
-                            .fill(Color.white.opacity(0.2))
-                            .overlay(content: {
-                                Text("...")
-                                    .offset(y:-3)
-                            })
-                            .frame(width: SETTINGS_BUTTON_SIDE_LENGTH, height: SETTINGS_BUTTON_SIDE_LENGTH)
-                            .onTapGesture(perform: changeSettings)
-                    }
-                    Spacer()
-                    HStack{
-                        Text("♥")
-                            .font(.system(size: dynamicFontSize(size: 50)))
-                            .foregroundColor(.red)
-                        Text("\(hbValue)")
-                            .fontWeight(.bold)
-                            .font(.system(size: dynamicFontSize(size: 50)))
-                            .fixedSize(horizontal: true, vertical: false)
-                            .background(.clear)
-                        Text("BPM")
-                            .foregroundStyle(.red)
-                    }
-                    .frame(width: TEXT_FIELD_WIDTH, alignment: .center)
-                    .offset(x: -MARGIN_OFFSET_WIDTH, y: -MARGIN_OFFSET_HEIGHT)
-                    Spacer()
-                }
-                .listItemTint(.clear)
-                .frame(height: SAFE_WIDTH)
-                
-                switch(selectedVAType) {
-                case "Grid":
-                    VAGrid(
-                        location: Binding<CGPoint>(get: { vaGridCoord }, set: { vaGridCoord = $0 }),
-                        reset: Binding<Bool>(get: { resetLocation }, set: { resetLocation = $0 })
-                    )
-                    .frame(width: SAFE_WIDTH, height: SAFE_WIDTH)
-                    .listItemTint(.clear)
-                case "Line":
-                    VALine(
-                        valence: Binding<CGFloat>(get: { vaGridCoord.x }, set: { vaGridCoord.x = $0 }),
-                        reset: Binding<Bool>(get: { resetLocation }, set: { resetLocation = $0 })
-                    )
-                    .frame(width: SAFE_WIDTH, height: SAFE_WIDTH)
-                    .listItemTint(.clear)
-                case "Form":
-                    HStack {
-                        Text("Valence: ")
-                            .offset(x: MARGIN_OFFSET_WIDTH)
-                        Spacer()
-                        TextField("Valence", value: $formValence, format: .number)
-                            .onSubmit {
-                                if formValence > 1 {
-                                    formValence = 1
-                                } else if formValence < 0 {
-                                    formValence = 0
-                                }
-                            }
-                            .offset(x: MARGIN_OFFSET_WIDTH)
-                            .foregroundColor(.black)
-                    }
-                    .background(.primary)
-                    .foregroundColor(.secondary)
-                    .frame(width: SAFE_WIDTH, height:  FORM_COMPONENTS_HEIGHT)
-                    .cornerRadius(10)
-                    .listItemTint(.clear)
-                    
-                    HStack {
-                        Text("Arousal: ")
-                            .offset(x: MARGIN_OFFSET_WIDTH)
-                        Spacer()
-                        TextField("Arousal", value: $formArousal, format: .number)
-                            .onSubmit {
-                                if formArousal > 1 {
-                                    formArousal = 1
-                                } else if formArousal < 0 {
-                                    formArousal = 0
-                                }
-                            }
-                            .offset(x: MARGIN_OFFSET_WIDTH)
-                            .foregroundColor(.black)
-                    }
-                    .background(.primary)
-                    .foregroundColor(.secondary)
-                    .frame(width: SAFE_WIDTH, height:  FORM_COMPONENTS_HEIGHT)
-                    .cornerRadius(10)
-                    .listItemTint(.clear)
-                    
-                    Button("Submit") {
-                        vaGridCoord.x = formValence
-                        vaGridCoord.y = formArousal
-                        formValence = 0
-                        formArousal = 0
-                    }
-                    .frame(width: SAFE_WIDTH, height: FORM_COMPONENTS_HEIGHT)
-                    .background(Color.red)
-                    .foregroundColor(.white)
-                    .fontWeight(.bold)
-                    .cornerRadius(10)
-                    .listItemTint(.clear)
-                case _:
-                    Rectangle()
-                        .overlay {
-                        Text("No choice selected. Change in the settings.")
-                            .font(.system(size: 12))
-                            .foregroundColor(Color.black)
+            ScrollViewReader { proxy in
+                List {
+                    VStack {
+                        HStack {
+                            Spacer(minLength: 5)
+                            Circle()
+                                .fill(Color.white.opacity(0.2))
+                                .overlay(content: {
+                                    Text("...")
+                                        .offset(y:-3)
+                                })
+                                .frame(width: SETTINGS_BUTTON_SIDE_LENGTH, height: SETTINGS_BUTTON_SIDE_LENGTH)
+                                .onTapGesture(perform: changeSettings)
                         }
-                        .cornerRadius(5)
+                        Spacer()
+                        HStack{
+                            Text("♥")
+                                .font(.system(size: dynamicFontSize(size: 50)))
+                                .foregroundColor(.red)
+                            Text("\(hbValue)")
+                                .fontWeight(.bold)
+                                .font(.system(size: dynamicFontSize(size: 50)))
+                                .fixedSize(horizontal: true, vertical: false)
+                                .background(.clear)
+                            Text("BPM")
+                                .foregroundStyle(.red)
+                        }
+                        .frame(width: TEXT_FIELD_WIDTH, alignment: .center)
+                        .offset(x: -MARGIN_OFFSET_WIDTH, y: -MARGIN_OFFSET_HEIGHT)
+                        Spacer()
+                    }
+                    .listItemTint(.clear)
+                    .frame(height: SAFE_WIDTH)
+                    
+                    switch(selectedVAType) {
+                    case "Grid":
+                        VAGrid(
+                            location: Binding<CGPoint>(get: { vaGridCoord }, set: { vaGridCoord = $0 }),
+                            reset: Binding<Bool>(get: { resetLocation }, set: { resetLocation = $0 })
+                        )
                         .frame(width: SAFE_WIDTH, height: SAFE_WIDTH)
                         .listItemTint(.clear)
-                }
-                
-                if showGraph {
-                    Chart(ecgGraph, id: \.time) {
-                        LineMark(
-                            x: .value("Time", $0.time),
-                            y: .value("Voltage", $0.voltage)
+                        .id(0)
+                    case "Line":
+                        VALine(
+                            valence: Binding<CGFloat>(get: { vaGridCoord.x }, set: { vaGridCoord.x = $0 }),
+                            reset: Binding<Bool>(get: { resetLocation }, set: { resetLocation = $0 })
                         )
-                        .foregroundStyle(by: .value("type", $0.type))
+                        .frame(width: SAFE_WIDTH, height: SAFE_WIDTH)
+                        .listItemTint(.clear)
+                        .id(0)
+                    case "Form":
+                        HStack {
+                            Text("Valence: ")
+                                .offset(x: MARGIN_OFFSET_WIDTH)
+                            Spacer()
+                            TextField("Valence", value: $formValence, format: .number)
+                                .onSubmit {
+                                    if formValence > 1 {
+                                        formValence = 1
+                                    } else if formValence < 0 {
+                                        formValence = 0
+                                    }
+                                }
+                                .offset(x: MARGIN_OFFSET_WIDTH)
+                                .foregroundColor(.black)
+                        }
+                        .background(.primary)
+                        .foregroundColor(.secondary)
+                        .frame(width: SAFE_WIDTH, height:  FORM_COMPONENTS_HEIGHT)
+                        .cornerRadius(10)
+                        .listItemTint(.clear)
+                        
+                        HStack {
+                            Text("Arousal: ")
+                                .offset(x: MARGIN_OFFSET_WIDTH)
+                            Spacer()
+                            TextField("Arousal", value: $formArousal, format: .number)
+                                .onSubmit {
+                                    if formArousal > 1 {
+                                        formArousal = 1
+                                    } else if formArousal < 0 {
+                                        formArousal = 0
+                                    }
+                                }
+                                .offset(x: MARGIN_OFFSET_WIDTH)
+                                .foregroundColor(.black)
+                        }
+                        .background(.primary)
+                        .foregroundColor(.secondary)
+                        .frame(width: SAFE_WIDTH, height:  FORM_COMPONENTS_HEIGHT)
+                        .cornerRadius(10)
+                        .listItemTint(.clear)
+                        
+                        Button("Submit") {
+                            vaGridCoord.x = formValence
+                            vaGridCoord.y = formArousal
+                            formValence = 0
+                            formArousal = 0
+                        }
+                        .frame(width: SAFE_WIDTH, height: FORM_COMPONENTS_HEIGHT)
+                        .background(Color.red)
+                        .foregroundColor(.white)
+                        .fontWeight(.bold)
+                        .cornerRadius(10)
+                        .listItemTint(.clear)
+                        .id(0)
+                    case _:
+                        Rectangle()
+                            .overlay {
+                                Text("No choice selected. Change in the settings.")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Color.black)
+                            }
+                            .cornerRadius(5)
+                            .frame(width: SAFE_WIDTH, height: SAFE_WIDTH)
+                            .listItemTint(.clear)
+                            .id(0)
                     }
-                    .scrollDisabled(false)
-                    .chartXScale(domain: 0...3)
-                    .chartXAxisLabel("Time (s)")
-                    .chartYAxisLabel("Voltage (mV)")
-                    .frame(width: SAFE_WIDTH, height: SAFE_WIDTH)
-                    .listItemTint(.clear)
+                    
+                    if showGraph {
+                        Chart(ecgGraph, id: \.time) {
+                            LineMark(
+                                x: .value("Time", $0.time),
+                                y: .value("Voltage", $0.voltage)
+                            )
+                            .foregroundStyle(by: .value("type", $0.type))
+                        }
+                        .scrollDisabled(false)
+                        .chartXScale(domain: 0...3)
+                        .chartXAxisLabel("Time (s)")
+                        .chartYAxisLabel("Voltage (mV)")
+                        .frame(width: SAFE_WIDTH, height: SAFE_WIDTH)
+                        .listItemTint(.clear)
+                    }
+                }
+                .listStyle(.plain)
+                .frame(width: SAFE_WIDTH * 1.1, height: SAFE_WIDTH)
+                .onReceive(notifDelegate.$hasNotified) { hasNotified in
+                    if hasNotified {
+                        notifDelegate.hasNotified = false
+                        proxy.scrollTo(0)
+                    }
                 }
             }
-            .listStyle(.plain)
-            .frame(width: SAFE_WIDTH * 1.1, height: SAFE_WIDTH)
+            
             
             if !settings {
                 Button("\(recordingStr)", action: changeRecording)
@@ -423,7 +436,6 @@ extension BiometricReadView {
             if let rr = response["rr"] as? Int {
                 rrValue = rr
             }
-            print(response)
             notifDelegate.generateRequest()
         case _:
             return

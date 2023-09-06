@@ -9,7 +9,8 @@ import Foundation
 import UserNotifications
 
 /// Note: Electrocardiogram app disables any possibility to receive notifications while it is in the foreground.
-class NotificationManager {
+class NotificationManager : ObservableObject {
+    @Published var hasNotified : Bool = false
     func generateRequest() {
         let content = UNMutableNotificationContent()
         content.title = "ECG Data retrieved"
@@ -20,6 +21,10 @@ class NotificationManager {
         UNUserNotificationCenter.current().add(request) { (error) in
             if let _ = error {
                 print("Error sending notification.")
+            }
+            
+            DispatchQueue.main.async {
+                self.hasNotified = true
             }
         }
     }
