@@ -53,7 +53,7 @@ Once the session has concluded, press stop recording to cease sending values to 
 
 #### How to Get Heart-rate Variability (HRV) and Respiratory-rate (RR) Consistently
 Navigate to the ECG application provided by Apple which allows the user to perform a recording session for measuring their heart rate. This provides the `hb_read` application with ECG data necessary that directly send information to the server for parsing/processing. Follow the following steps:
-- Hold the crown for 30 seconds straight until you are prompted with a screen to conclude the session.
+- While in the ECG application: hold the crown for 30 seconds straight until you are prompted with a screen to conclude the session.
 - Navigate back to the `hb_read` application and set your valence-arousal values once you have concluded the session.
 - Repeat the previous steps. This will allow for the app to generate information about RR and HRV once in 30 seconds (user-initiated).
 
