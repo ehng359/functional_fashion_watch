@@ -51,5 +51,11 @@ Once the address has been inputed (required to start sending HTTP requests), tap
 ```
 Once the session has concluded, press stop recording to cease sending values to the endpoint. Reinitiate at any point in time.
 
+#### How to Get Heart-rate Variability (HRV) and Respiratory-rate (RR) Consistently
+Navigate to the ECG application provided by Apple which allows the user to perform a recording session for measuring their heart rate. This provides the `hb_read` application with ECG data necessary that directly send information to the server for parsing/processing. Follow the following steps:
+- Hold the crown for 30 seconds straight until you are prompted with a screen to conclude the session.
+- Navigate back to the `hb_read` application and set your valence-arousal values once you have concluded the session.
+- Repeat the previous steps. This will allow for the app to generate information about RR and HRV once in 30 seconds (user-initiated).
+
 ## VA-Model
 This model effectively presents information to enable recording of valence and arousal values by either pressing on the model and dragging the cursor around to record values within the next HTTP request sent to the endpoint or simply pressing along the model (Grid/Line). The most basic of these implementations allows for the user to input values into a form and sending those manually inputted values along.
