@@ -430,8 +430,9 @@ extension BiometricReadView {
         
         switch((requestType, biometricType)){
         case (.POST, .ecg):
-            if let hrv = response["hrv"] as? Int{
-                hrvValue = hrv
+            print("response", response)
+            if let hrv = response["hrv"] as? Double{
+                hrvValue = Int(hrv)
             }
             if let rr = response["rr"] as? Int {
                 rrValue = rr
@@ -496,6 +497,7 @@ extension BiometricReadView {
                     "arousal" : coordChosen ? vaGridCoord.y : NSNull(),
                     "activity" : selectedActivityType
                 ]
+                print("Heart-beat variation: \(hrvValue)")
                 rrValue = 0
             }
             
