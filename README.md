@@ -52,6 +52,8 @@ Once the address has been inputed (required to start sending HTTP requests), tap
 Once the session has concluded, press stop recording to cease sending values to the endpoint. Reinitiate at any point in time.
 
 #### How to Get Heart-rate Variability (HRV) and Respiratory-rate (RR) Consistently
+To enable this capability, navigate to your iPhone and setup the ECG application for use (enabling the iPhone to keep track of aFib information).
+
 Navigate to the ECG application provided by Apple which allows the user to perform a recording session for measuring their heart rate. This provides the `hb_read` application with ECG data necessary that directly send information to the server for parsing/processing. Follow the following steps:
 - While in the ECG application: hold the crown for 30 seconds straight until you are prompted with a screen to conclude the session.
 - Navigate back to the `hb_read` application and set your valence-arousal values once you have concluded the session.
