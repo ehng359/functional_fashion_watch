@@ -70,7 +70,7 @@ struct BiometricReadView: View {
     
     @State var address : String = "https://biometrics.uclalemur.com"
     @State var email : String = ""
-    @State var defaultEmailAddresses : [String] = ["", "alexiseblock@g.ucla.edu", "ehng359@g.ucla.edu"]
+    @State var defaultEmailAddresses : [String] = ["", "alexiseblock@g.ucla.edu", "ehng359@g.ucla.edu", "ces261@case.edu"]
     
     @State var recording : Bool = false
     @State var recordingStr : String = "Start Recording"
